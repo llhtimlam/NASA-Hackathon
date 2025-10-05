@@ -1,0 +1,16 @@
+import requests
+
+url = "https://power.larc.nasa.gov/api/projection/daily/point"
+params = {
+    "start": "20250101",
+    "end": "20251231",
+    "latitude": 35.0,
+    "longitude": -120.0,
+    "community": "ag",
+    "parameters": "t2m,prectotcorr",
+    "format": "json"
+}
+
+response = requests.get(url, params=params)
+data = response.json()
+print(data)

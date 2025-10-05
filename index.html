@@ -32,5 +32,13 @@
         <h1>Welcome!</h1>
         <p>This is a simple web page created for demonstration purposes.</p>
     </div>
+    <div id="json"></div>
+<script>
+fetch('output.json')
+  .then(response => response.json())
+  .then(data => {
+    document.getElementById('json').textContent = JSON.stringify(data, null, 2);
+  });
+</script>
 </body>
 </html>
