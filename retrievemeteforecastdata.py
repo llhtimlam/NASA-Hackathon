@@ -5,9 +5,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 import os
 
-load_dotenv("metologin.env")
-username = os.getenv("METEOMATICS_USERNAME")
-password = os.getenv("METEOMATICS_PASSWORD")
+
 '''
 Set your environment variables locally (not in your repo):
 
@@ -86,6 +84,7 @@ def meteomatics_json_to_csv(json_data, output_file='meteomatics_forecast.csv'):
                     row_dict[key][readable] = value
     # Convert dict to DataFrame
     df = pd.DataFrame(list(row_dict.values()))
+    df['Date'] = df['Date'].apply(lambda d: datetime.strptime(str(d)[:10], "%Y-%m-%d").strftime("%Y%m%d") if '-' in str(d) else str(d))
     cols = [
         'Date', 'Latitude', 'Longitude',
         'Heat Index (oC)', 'Heat Index Label',
@@ -98,15 +97,28 @@ def meteomatics_json_to_csv(json_data, output_file='meteomatics_forecast.csv'):
     print(f"Saved to {output_file}")
     return df
 
-def get_meteomatics_forecast(start_date, end_date, lat, lon, username, password):
+def get_meteomatics_forecast(start_date, end_date, lat, lon):
     """
-    Query Meteomatics API for custom date range and location.
-    Dates must be in ISO format: YYYY-MM-DDTHH:MM:SS.000Z
-    Example: '2026-11-27T00:00:00.000Z'
+    Accepts start_date and end_date in YYYYMMDD format,
+    converts to ISO format required by Meteomatics API.
     """
+    load_dotenv("metologin.env")
+    meteusername = os.getenv("METEOMATICS_USERNAME")
+    metepassword = os.getenv("METEOMATICS_PASSWORD")
+    # Convert YYYYMMDD to YYYY-MM-DDT00:00:00.000Z
+    def to_iso(date_str):
+        try:
+            dt = datetime.strptime(date_str, "%Y%m%d")
+            return dt.strftime("%Y-%m-%dT00:00:00.000Z")
+        except Exception:
+            return date_str  # fallback if already in ISO
+
+    start_iso = to_iso(start_date)
+    end_iso = to_iso(end_date)
+
     # Build the query string
     query = (
-        f"{start_date}--{end_date}:P1D/"
+        f"{start_iso}--{end_iso}:P1D/"
         "frost_warning_24h:idx,heat_index:C,heavy_rain_warning_24h:idx,"
         "wind_warning_24h:idx,t_apparent:C/"
         f"{lat},{lon}/json?model=mix"
@@ -114,7 +126,7 @@ def get_meteomatics_forecast(start_date, end_date, lat, lon, username, password)
     url = f"https://api.meteomatics.com/{query}"
 
     # Basic authentication
-    response = requests.get(url, auth=(username, password))
+    response = requests.get(url, auth=(meteusername,metepassword))
     if response.status_code == 200:
         return response.json()
     else:
@@ -123,7 +135,7 @@ def get_meteomatics_forecast(start_date, end_date, lat, lon, username, password)
 
 # Example usage
 """
-data = get_meteomatics_forecast("2026-01-01T00:00:00.000Z", "2028-12-31T00:00:00.000Z", 43.47589488154674, -80.5321299441535, username, password)
+data = get_meteomatics_forecast("20251101", "20251102", 43.47589488154674, -80.5321299441535)
 with open('meteforecast.json', 'w') as f:
     json.dump(data, f, indent=2)
 data2 = meteomatics_json_to_csv(data, 'meteforecastdata.csv')
