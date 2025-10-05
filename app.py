@@ -29,8 +29,13 @@ def eyeofhorus():
     df_nasa = nasa_forecast_to_csv(nasa_json, 'nasaforecast')
 
     # Get Meteomatics forecast
-    meteo_json = get_meteomatics_forecast(start, end, lat, lon)
-    df_meteo = meteomatics_json_to_csv(meteo_json, 'meteforecast')
+    try:
+            meteo_json = get_meteomatics_forecast(start, end, lat, lon)
+            df_meteo = meteomatics_json_to_csv(meteo_json, 'meteforecast')
+    except Exception as e:
+        print("Error fetching Meteomatics forecast:", e)
+        # Create an empty DataFrame if fetch fails
+        df_meteo = pd.DataFrame({'Date': df_nasa['Date']}) if 'Date' in df_nasa.columns else pd.DataFrame()
 
     # Combine both DataFrames on 'Date'
     # Drop Latitude, Longitude, Elevation columns if present
@@ -45,7 +50,7 @@ def eyeofhorus():
     df_combined = pd.merge(df_nasa, df_meteo, on='Date', how='outer')
 
     # Debug: print combined DataFrame and output structure
-    print("df_combined head:\n", df_combined.head())
+    #print("df_combined head:\n", df_combined.head())
     
     # Build JSON structure: dates as columns, parameters as rows
     dates = list(df_combined['Date'])
@@ -59,11 +64,7 @@ def eyeofhorus():
         table.append(row)
 
     # Debug: print output JSON structure
-    print("jsonify output:\n", {
-        "total": len(df_combined),
-        "dates": dates,
-        "table": table
-    })
+    #print("jsonify output:\n", {"total": len(df_combined),"dates": dates,"table": table})
 
     return jsonify({
         "total": len(df_combined),
