@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NASA Climate Data</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    .container { max-width: 900px; margin: auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
+    table { border-collapse: collapse; width: 100%; margin-bottom: 10px;}
+    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left;}
+    th { background: #f4f4f4; }
+    .pagination { margin: 10px 0; }
+    .pagination button { margin: 0 2px; padding: 4px 10px; }
+    pre { background:#f4f4f4;padding:10px;border-radius:6px;max-height:300px;overflow:auto;}
+    @media (max-width: 600px) {
+      .container { padding: 5px; }
+      th, td { padding: 4px 5px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>NASA Climate Data</h1>
+    <form id="nasaForm">
+      <input type="text" name="start" placeholder="Start date (YYYYMMDD)" required>
+      <input type="text" name="end" placeholder="End date (YYYYMMDD)" required>
+      <input type="text" name="lat" placeholder="Latitude" required>
+      <input type="text" name="lon" placeholder="Longitude" required>
+      <button type="submit">Get Forecast</button>
+    </form>
+    <h2>Forecast Table</h2>
+    <div id="dynamicTable"></div>
+    <div class="pagination" id="pagination"></div>
+    <h2>Raw JSON Output</h2>
+    <pre id="jsonOutput"></pre>
+  </div>
+<script>
+let currentPage = 1;
+const pageSize = 100;
+let lastPayload = null;
+let totalPages = 1;
+
+document.getElementById('nasaForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const form = e.target;
+  currentPage = 1;
+  lastPayload = {
+    start: form.start.value,
+    end: form.end.value,
+    lat: form.lat.value,
+    lon: form.lon.value,
+    page: currentPage,
+    page_size: pageSize
+  };
+  fetchPage(currentPage);
+});
+
+function fetchPage(page) {
+  if (!lastPayload) return;
+  lastPayload.page = page;
+  fetch('http://localhost:5500/eyeofhorus', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(lastPayload)
+  })
+  .then(response => response.json())
+  .then(result => {
+    document.getElementById('jsonOutput').textContent = JSON.stringify(result, null, 2);
+
+    // Build dynamic table: parameters as rows, dates as columns
+    const dates = result.dates || [];
+    const table = result.table || [];
+    let html = '<table><thead><tr><th>Parameter</th>';
+    dates.forEach(date => {
+      html += `<th>${date}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+    table.forEach(row => {
+      html += `<tr><td>${row.parameter}</td>`;
+      dates.forEach(date => {
+        html += `<td>${row[date] !== undefined ? row[date] : ''}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('dynamicTable').innerHTML = html;
+
+    // Pagination controls
+    totalPages = Math.ceil(result.total / pageSize);
+    let paginationHtml = '';
+    if (page > 1) {
+      paginationHtml += `<button onclick="fetchPage(${page-1})">Previous</button>`;
+    } else {
+      paginationHtml += `<button disabled>Previous</button>`;
+    }
+    paginationHtml += ` Page ${page} of ${totalPages} `;
+    if (page < totalPages) {
+      paginationHtml += `<button onclick="fetchPage(${page+1})">Next</button>`;
+    } else {
+      paginationHtml += `<button disabled>Next</button>`;
+    }
+    document.getElementById('pagination').innerHTML = paginationHtml;
+  })
+  .catch((err) => {
+    document.getElementById('dynamicTable').innerHTML = "<p>Error fetching data.</p>";
+    document.getElementById('pagination').innerHTML = "";
+    document.getElementById('jsonOutput').textContent = "Error: " + err;
+    console.error("Fetch error:", err);
+  });
+}
+
+window.fetchPage = fetchPage;
+</script>
+</body>
+</html>
