@@ -6,17 +6,18 @@ import sqlite3
 import requests
 import subprocess
 import pandas as pd
+import json
 from retrievenasaforecastdata import get_nasa_forecast, nasa_forecast_to_csv
 from retrievemeteforecastdata import get_meteomatics_forecast, meteomatics_json_to_csv
 
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/indexeyeofhorus.html')
+@app.route('/index.html')
 def serve_html():
-    return send_from_directory('.', 'indexeyeofhorus.html')
+    return send_from_directory('.', 'index.html')
 
-@app.route('/eyeofhorus', methods=['POST'])
+@app.route('/index.html', methods=['POST'])
 def eyeofhorus():
     req_data = request.get_json()
     start = req_data.get('start')
@@ -57,20 +58,24 @@ def eyeofhorus():
     param_cols = [col for col in df_combined.columns if col != 'Date']
     table = []
     for param in param_cols:
-        row = {'parameter': param}
+        row = {date: None for date in dates}
         for date in dates:
             value = df_combined.loc[df_combined['Date'] == date, param].values
             row[date] = value[0] if len(value) > 0 else None
-        table.append(row)
+        table.append({param: row})
 
     # Debug: print output JSON structure
     #print("jsonify output:\n", {"total": len(df_combined),"dates": dates,"table": table})
 
-    return jsonify({
-        "total": len(df_combined),
+    # Save JSON to file
+    output_json = {
         "dates": dates,
         "table": table
-    })
+    }
+    #with open('output.json', 'w') as f:
+    #    json.dump(output_json, f, indent=2)
+
+    return jsonify(output_json)
 
 if __name__ == '__main__':
     app.run(port=5500, debug=False)
