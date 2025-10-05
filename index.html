@@ -51,7 +51,7 @@ document.getElementById('nasaForm').addEventListener('submit', function(e) {
 
 function fetchTable() {
   if (!lastPayload) return;
-  fetch('http://localhost:5500/index.html', {
+  fetch('https://llhtimlam.github.io/NASA-Hackathon/index.html', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(lastPayload)
