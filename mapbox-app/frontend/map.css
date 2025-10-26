@@ -1,22 +1,37 @@
-html, body { height: 100%; margin: 0; }
+html, body { 
+  height: 100%; 
+  margin: 0; 
+  font-family: Inter, system-ui, sans-serif;
+  overflow: hidden; /* Prevent body scrolling */
+}
+
+/* ===== MAP STYLES ===== */
 .map { 
   position: absolute; 
-  inset: 0;
-  height: 100vh !important; /* Fill remaining space */
-  z-index: -1;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
+  z-index: 1; /* Fixed: Make map interactable */
 }
 
-/* Topbar */
+/* ===== TOPBAR & CONTROLS ===== */
 .topbar{
-  position: absolute; left: 16px; right: 16px; top: 16px; z-index: 10;
-  display: flex; gap: 12px; align-items: center; pointer-events: auto
+  position: absolute; 
+  left: 16px; right: 16px; top: 16px; 
+  z-index: 10;
+  display: flex; 
+  gap: 12px; 
+  align-items: center; 
+  pointer-events: none; /* Allow clicks to pass through */
 }
 
-/* Rest of your existing CSS stays the same */
+/* All pills allow pointer events */
 .pill{
   pointer-events: auto; 
-  min-height: 56px; 
-  padding: 8px 14px; 
+  min-height: 64px; 
+  padding: 10px 16px;
   border-radius: 16px;
   background: rgba(127,143,119,.95); 
   color: #fff; 
@@ -24,82 +39,97 @@ html, body { height: 100%; margin: 0; }
   gap: 10px;
   align-items: center; 
   box-shadow: 0 10px 26px rgba(0,0,0,.18);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease; /* Restored animation */
+}
+
+.pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0,0,0,.25);
+}
+
+/* Main search pill - takes available space */
+.pill.pill--search {
+  flex: 1;
+  min-width: 280px;
+}
+
+/* Date pills - fixed width */
+.pill.pill--date {
+  flex-shrink: 0;
+  min-width: 140px;
 }
 
 .label{
   font: 800 12px/1 Inter, system-ui, sans-serif;
-  background: rgba(255,255,255,.18); padding: 6px 10px; border-radius: 999px;
-}
-#geocoder{ min-width: 280px; flex: 1; }
-
-/* If Geocoder loads */
-.mapboxgl-ctrl-geocoder{ background: transparent; box-shadow: none; width: 100%; }
-.mapboxgl-ctrl-geocoder--input{
-  background: transparent; color: #fff; font: 600 18px/1.1 Inter, system-ui, sans-serif;
-}
-.mapboxgl-ctrl-geocoder--input::placeholder{ color:#fff; opacity:.95; }
-
-/* Fallback input (if geocoder script fails) */
-.fallback-input{
-  width: 100%; border: 0; outline: none; background: transparent; color: #fff;
-  font: 600 18px/1.1 Inter, system-ui, sans-serif; padding: 6px 8px;
-}
-.fallback-input::placeholder{ color:#fff; opacity:.95; }
-
-/* Date pill */
-.pill--date label{ 
-  font: 800 12px/1 Inter, system-ui, sans-serif; 
-  margin-right: 8px; 
-}
-.pill--date input{
-  border: 0; 
-  border-radius: 10px; 
-  padding: 8px 10px; 
-  font: 600 14px Inter, system-ui, sans-serif;
+  background: rgba(255,255,255,.18); 
+  padding: 6px 10px; 
+  border-radius: 999px;
+  margin-right: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
 }
 
-
-/* ============================
-   Geocoder — polished styling
-   ============================ */
-
-/* Put the geocoder on-brand inside our pill */
-#geocoder { min-width: 320px; flex: 1; }
+/* ===== SEARCH BAR SPECIFIC STYLES ===== */
+#geocoder{ 
+  width: 100%;
+  min-width: 0;
+  position: relative; /* For dropdown positioning */
+}
 
 /* Container */
 .pill #geocoder .mapboxgl-ctrl-geocoder{
   width: 100%;
-  background: transparent;           /* let the green pill show through */
+  background: transparent;
   border: 0;
   box-shadow: none;
-  color: #fff;                        /* icons inherit this */
+  color: #fff;
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 /* Input */
 .pill #geocoder .mapboxgl-ctrl-geocoder--input{
   background: transparent;
-  border: 0 !important;
-  box-shadow: none !important;
-  outline: none !important;
+  border: 0;
+  box-shadow: none;
+  outline: none;
   color: #fff;
   font: 700 24px/1.2 Inter, system-ui, sans-serif;
   padding: 6px 8px;
-  margin-left: 6px;                   /* a little space after the icon */
+  margin-left: 6px;
+  width: 100%;
+  min-width: 0;
+  transition: all 0.2s ease;
 }
+
+.pill #geocoder .mapboxgl-ctrl-geocoder--input:focus {
+  transform: translateX(4px);
+}
+
 .pill #geocoder .mapboxgl-ctrl-geocoder--input::placeholder{
-  color: #fff; opacity: .95;
+  color: #fff; 
+  opacity: .95;
 }
 
 /* Left magnifier icon */
 .pill #geocoder .mapboxgl-ctrl-geocoder--icon{
-  width: 18px; height: 18px;
+  width: 18px; 
+  height: 18px;
   opacity: .9;
+  transition: opacity 0.2s ease;
+}
+
+.pill #geocoder .mapboxgl-ctrl-geocoder--icon:hover {
+  opacity: 1;
 }
 
 /* Right-side add-ons (crosshair/pin) — hide to simplify */
-.pill #geocoder .mapboxgl-ctrl-geocoder--pin-right{ display: none; }
+.pill #geocoder .mapboxgl-ctrl-geocoder--pin-right{ 
+  display: none; 
+}
 
 /* Clear (X) button: subtle, round, not a big white square */
 .pill #geocoder .mapboxgl-ctrl-geocoder--button{
@@ -107,72 +137,325 @@ html, body { height: 100%; margin: 0; }
   border: 0;
   box-shadow: none;
   color: #ffffff;
-  width: 28px; height: 28px;
+  width: 28px; 
+  height: 28px;
   border-radius: 50%;
-  transition: background .15s ease;
+  transition: all 0.15s ease;
 }
+
 .pill #geocoder .mapboxgl-ctrl-geocoder--button:hover{
   background: rgba(255,255,255,.14);
+  transform: scale(1.1);
 }
 
-/* Suggestions dropdown */
-.pill #geocoder .suggestions-wrapper{ width: 100%; }
+/* ===== SUGGESTIONS DROPDOWN - RESTORED ORIGINAL STYLING ===== */
+.pill #geocoder .suggestions-wrapper { 
+  width: 100%; 
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  z-index: 10000;
+  animation: slideDown 0.3s ease; /* Restored animation */
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .pill #geocoder .suggestions{
-  margin-top: 10px;
-  background: rgba(52, 73, 61, .98);      /* deep green */
+  background: rgba(52, 73, 61, 0.85);
   color: #fff;
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
-  box-shadow: 0 14px 30px rgba(0,0,0,.25);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+  overflow: hidden;
+  padding: 8px;
+  margin: 0 4px;
+  backdrop-filter: blur(15px);
+}
+
+/* Enhanced suggestion items with better spacing and visual appeal */
+.pill #geocoder .suggestions > li {
+  margin-bottom: 8px;
+}
+
+.pill #geocoder .suggestions > li:last-child {
+  margin-bottom: 0;
+}
+
+.pill #geocoder .suggestions > li > a{
+  padding: 14px 16px;
+  color: #fff;
+  font: 500 16px/1.4 Inter, system-ui, sans-serif;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255,255,255,0.10);
+  display: block;
+  position: relative;
   overflow: hidden;
 }
-.pill #geocoder .suggestions > li > a{
-  padding: 12px 14px;
-  color: #fff;
-  font: 600 14px/1.35 Inter, system-ui, sans-serif;
+
+/* Add subtle gradient border effect */
+.pill #geocoder .suggestions > li > a::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.8), rgba(255,255,255,0.2));
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
+
+/* Distinct outline for each suggestion with enhanced styling */
+.pill #geocoder .suggestions > li > a{
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
 .pill #geocoder .suggestions > li.active > a,
 .pill #geocoder .suggestions > li > a:hover{
-  background: rgba(255,255,255,.10);
+  background: rgba(255,255,255,.20);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  transform: translateY(-2px);
 }
 
-/* Make the whole pill a little taller to breathe */
-.pill{ min-height: 64px; padding: 10px 16px; }
-.label{ margin-right: 8px; }
-its not 
+.pill #geocoder .suggestions > li.active > a::before,
+.pill #geocoder .suggestions > li > a:hover::before {
+  opacity: 1;
+}
 
-/* Bottom sheet */
+/* ===== DATE INPUTS ===== */
+.pill--date label{ 
+  font: 800 12px/1 Inter, system-ui, sans-serif; 
+  margin-right: 8px; 
+  white-space: nowrap;
+}
+
+.pill--date input{
+  border: 0; 
+  border-radius: 10px; 
+  padding: 8px 10px; 
+  font: 600 14px Inter, system-ui, sans-serif;
+  background: rgba(255,255,255,.9);
+  width: 100%;
+  min-width: 0;
+  transition: all 0.2s ease;
+}
+
+.pill--date input:focus {
+  background: rgba(255,255,255,1);
+  transform: scale(1.05);
+}
+
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+
+/* Tablet (768px - 1199px) */
+@media (max-width: 1199px) {
+  .topbar {
+    gap: 8px;
+  }
+  .pill.pill--search {
+    flex: 1;
+  }
+  .pill--date {
+    min-width: 130px;
+  }
+  .pill #geocoder .mapboxgl-ctrl-geocoder--input {
+    font-size: 20px;
+  }
+}
+
+/* Mobile (767px and below) */
+@media (max-width: 767px) {
+  .topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    row-gap: 8px;
+    left: 12px;
+    right: 12px;
+    top: 12px;
+  }
+  .pill {
+    min-height: 56px;
+    padding: 8px 12px;
+  }
+  .pill.pill--search {
+    flex: 1 1 100%;
+    min-width: 100%;
+    order: 1;
+  }
+  .pill.pill--date {
+    flex: 1;
+    min-width: calc(50% - 16px);
+    order: 2;
+  }
+  .pill #geocoder .mapboxgl-ctrl-geocoder--input {
+    font-size: 18px;
+    padding: 4px 6px;
+  }
+  .label {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
+/* Small Mobile (under 480px) */
+@media (max-width: 479px) {
+  .topbar {
+    gap: 6px;
+    left: 8px;
+    right: 8px;
+    top: 8px;
+  }
+  .pill {
+    min-height: 52px;
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+  .pill.pill--date {
+    flex: 1 1 calc(50% - 6px);
+    min-width: calc(50% - 6px);
+  }
+  .pill #geocoder .mapboxgl-ctrl-geocoder--input {
+    font-size: 16px;
+    padding: 4px 6px;
+    margin-left: 4px;
+  }
+  .label {
+    font-size: 10px;
+    padding: 3px 6px;
+    margin-right: 4px;
+  }
+  .pill--date input {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+}
+
+/* ===== BOTTOM SHEET ===== */
 .sheet-scrim{
-  position: fixed; inset: 0; background: rgba(0,0,0,.35); backdrop-filter: blur(2px);
-  opacity: 0; pointer-events: none; transition: .2s; z-index: 20;
+  position: fixed; 
+  inset: 0; 
+  background: rgba(0,0,0,.35); 
+  backdrop-filter: blur(2px);
+  opacity: 0; 
+  pointer-events: none; 
+  transition: opacity 0.3s ease; /* Restored animation */
+  z-index: 20;
 }
+
 .sheet{
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21;
-  background: #fff; border-radius: 16px 16px 0 0; transform: translateY(100%);
-  box-shadow: 0 -20px 40px rgba(0,0,0,.18); transition: transform .24s ease;
-  max-height: 55vh; overflow: auto;
+  position: fixed; 
+  left: 0; right: 0; bottom: 0; 
+  z-index: 21;
+  background: #fff; 
+  border-radius: 16px 16px 0 0; 
+  transform: translateY(100%);
+  box-shadow: 0 -20px 40px rgba(0,0,0,.18); 
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth animation */
+  max-height: 70vh;
+  overflow: auto;
 }
-.sheet--open{ transform: translateY(0%); }
+
+.sheet--open{ 
+  transform: translateY(0%); 
+}
+
 .sheet--open + .sheet-scrim,
-.sheet-scrim.sheet--open{ opacity: 1; pointer-events: auto; }
-.sheet__hdr{ display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 8px; }
-.sheet__title{ font: 700 18px/1.2 Inter, system-ui, sans-serif; }
-.sheet__sub{ color:#667085; font: 500 12px/1.2 Inter, system-ui, sans-serif; }
-.sheet__close{ border:0; background:#f2f4f7; border-radius:10px; padding:8px 10px; cursor:pointer; }
-.sheet__body{ padding: 8px 20px 18px; }
-/* Table container with horizontal scroll */
+.sheet-scrim.sheet--open{ 
+  opacity: 1; 
+  pointer-events: auto; 
+}
+
+.sheet__hdr{ 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  padding: 16px 20px 8px; 
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sheet__title{ 
+  font: 700 18px/1.2 Inter, system-ui, sans-serif; 
+  color: #1a1a1a;
+}
+
+.sheet__sub{ 
+  color: #667085; 
+  font: 500 12px/1.2 Inter, system-ui, sans-serif; 
+}
+
+.sheet__close{ 
+  border: 0; 
+  background: #f2f4f7; 
+  border-radius: 10px; 
+  padding: 8px 10px; 
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sheet__close:hover {
+  background: #e4e7ec;
+  transform: scale(1.1);
+}
+
+.sheet__body{ 
+  padding: 8px 20px 18px; 
+}
+
+/* ===== DATA TABLE STYLES ===== */
 .table-container {
   width: 100%;
   overflow-x: auto;
   border: 1px solid #eef2f6;
   border-radius: 8px;
+  background: #fff;
+  animation: fadeIn 0.4s ease;
+  /* Fix scrolling issues */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #c1c1c1 #f1f1f1; /* Firefox */
 }
 
-/* Fixed first and last columns */
+/* Webkit scrollbar styling */
+.table-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
 .wx-table {
   width: 100%;
-  border-collapse: collapse;
-  min-width: 600px; /* Ensure table has minimum width */
+  border-collapse: separate; /* Changed from collapse for better border control */
+  border-spacing: 0;
+  min-width: 600px;
+  font-size: 14px;
+  /* Prevent layout shifts */
+  table-layout: fixed;
 }
 
 .wx-table thead th {
@@ -181,51 +464,284 @@ its not
   position: sticky;
   top: 0;
   z-index: 10;
+  border-bottom: 2px solid #e1e5e9;
+  /* Prevent header movement */
+  box-shadow: 0 1px 0 #e1e5e9;
 }
 
-/* Fixed first column (Parameter names) */
+/* Fixed columns for better scrolling - IMPROVED */
 .wx-table th:first-child,
 .wx-table td:first-child {
   position: sticky;
   left: 0;
   background: #f8fafc;
   z-index: 5;
-  min-width: 160px; /* Fixed width for parameter column */
+  min-width: 160px;
+  width: 160px; /* Fixed width */
+  /* Prevent visual glitches */
+  box-shadow: 1px 0 0 #eef2f6;
 }
 
-/* Fixed last column (Units) */
 .wx-table th:last-child,
 .wx-table td:last-child {
   position: sticky;
   right: 0;
   background: #f8fafc;
   z-index: 5;
-  min-width: 80px; /* Fixed width for unit column */
+  min-width: 80px;
+  width: 80px; /* Fixed width */
+  /* Prevent visual glitches */
+  box-shadow: -1px 0 0 #eef2f6;
 }
 
-/* Date columns - proper width */
+/* Date columns - fixed widths for stability */
 .wx-table th:not(:first-child):not(:last-child),
 .wx-table td:not(:first-child):not(:last-child) {
-  min-width: 120px; /* Fixed width for date columns */
+  min-width: 120px;
+  width: 120px; /* Fixed width */
   text-align: center;
+  /* Prevent content wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wx-table th, .wx-table td {
   border-bottom: 1px solid #eef2f6;
-  padding: 10px;
+  padding: 12px 10px;
   text-align: left;
   white-space: nowrap;
+  /* Prevent content from affecting layout */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Fixed heights for consistent rows */
+  height: 48px;
+  box-sizing: border-box;
 }
 
-/* Header styling for date columns */
 .wx-table thead th:not(:first-child):not(:last-child) {
   background: #e8f0fe;
   font-weight: 600;
 }
 
-/* Toast */
+/* ===== COLLAPSIBLE TABLE ENHANCEMENTS - STABLE ===== */
+.collapsible-table .param-group {
+  cursor: pointer;
+  background: #f8fafc;
+  border-left: 4px solid #4b6cb7;
+  transition: background-color 0.3s ease; /* Only transition background */
+  /* Fixed height for consistent animation */
+  height: 48px;
+}
+
+.collapsible-table .param-group:hover {
+  background: #e8f0fe;
+  /* Remove transform to prevent layout shifts */
+}
+
+.collapsible-table .group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  /* Prevent text wrapping */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collapsible-table .expand-icon {
+  font-size: 12px;
+  color: #667085;
+  width: 16px;
+  text-align: center;
+  transition: transform 0.3s ease; /* Only transition transform */
+  flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+.collapsible-table .param-group.expanded .expand-icon {
+  transform: rotate(0deg);
+  color: #4b6cb7;
+}
+
+.collapsible-table .param-group.collapsed .expand-icon {
+  transform: rotate(-90deg);
+}
+
+.collapsible-table .subparam {
+  background: #fafbfc;
+  /* No transitions that affect layout */
+  height: 48px;
+}
+
+.collapsible-table .subparam-label {
+  padding-left: 32px !important;
+  color: #667085;
+  font-weight: 500;
+  font-style: italic;
+  /* Prevent layout shifts */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== MAKE ENTIRE GROUP ROW CLICKABLE ===== */
+.collapsible-table .param-group {
+  cursor: pointer;
+}
+
+.collapsible-table .param-group td {
+  cursor: pointer;
+}
+
+/* ===== AI SUMMARY STYLES ===== */
+.param-group[data-behavior*="SUMMARY"] td:not(:first-child):not(:last-child) {
+  font-style: italic;
+  color: #7e57c2;
+  font-weight: 600;
+  background: linear-gradient(135deg, #f3e5f5 0%, #e8eaf6 100%);
+}
+
+/* Remove the special styling when expanded */
+.param-group[data-behavior*="SUMMARY"].expanded td:not(:first-child):not(:last-child) {
+  font-style: normal;
+  color: inherit;
+  font-weight: normal;
+  background: inherit;
+}
+
+/* ===== AI SUMMARY PLACEHOLDER STYLES - STABLE ===== */
+.param-group[data-behavior*="SUMMARY"].collapsed td:not(:first-child) {
+  font-style: italic;
+  color: #7e57c2;
+  background: linear-gradient(135deg, #f3e5f5 0%, #e8eaf6 100%);
+  font-weight: 600;
+  text-align: center;
+  border: 1px dashed #b39ddb;
+  /* Fixed appearance */
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.param-group[data-behavior*="SUMMARY"] .group-header {
+  background: linear-gradient(135deg, #7e57c2 0%, #5e35b1 100%);
+  color: white;
+  border-left-color: #5e35b1;
+  position: relative;
+}
+
+/* Add a subtle "AI" badge to the radiation group */
+.param-group[data-behavior*="SUMMARY"] .group-header::after {
+  content: "AI";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.2);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 8px;
+  letter-spacing: 0.5px;
+}
+
+.param-group[data-behavior*="SUMMARY"] .group-header .expand-icon {
+  color: white;
+}
+
+/* Subtle animation without layout shifts */
+@keyframes subtlePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.9; }
+}
+
+.param-group[data-behavior*="SUMMARY"].collapsed td:not(:first-child) {
+  animation: subtlePulse 3s ease-in-out infinite;
+}
+
+/* Stable hover effect */
+.param-group[data-behavior*="SUMMARY"].collapsed:hover {
+  background: linear-gradient(135deg, #8e67d2 0%, #6e45c1 100%);
+}
+
+/* Mobile optimization for table */
+@media (max-width: 767px) {
+  .table-container {
+    border-radius: 6px;
+    margin: 0 -8px;
+    width: calc(100% + 16px);
+  }
+  
+  .wx-table {
+    min-width: 500px;
+    font-size: 13px;
+  }
+  
+  .wx-table th:first-child,
+  .wx-table td:first-child {
+    min-width: 140px;
+    width: 140px;
+  }
+  
+  .wx-table th:not(:first-child):not(:last-child),
+  .wx-table td:not(:first-child):not(:last-child) {
+    min-width: 100px;
+    width: 100px;
+  }
+  
+  .wx-table th, .wx-table td {
+    padding: 10px 8px;
+    height: 44px;
+  }
+}
+
+/* ===== TOAST NOTIFICATIONS ===== */
 .toast{
-  position: fixed; left: 50%; transform: translateX(-50%);
-  bottom: 16px; background: rgba(0,0,0,.8); color:#fff; padding:10px 14px;
-  border-radius:12px; font: 600 14px/1 Inter, system-ui, sans-serif; z-index:30;
+  position: fixed; 
+  left: 50%; 
+  transform: translateX(-50%);
+  bottom: 16px; 
+  background: rgba(0,0,0,.9); 
+  color: #fff; 
+  padding: 12px 18px;
+  border-radius: 12px; 
+  font: 600 14px/1 Inter, system-ui, sans-serif; 
+  z-index: 30;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+  animation: slideUp 0.3s ease; /* Restored animation */
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Mobile toast adjustments */
+@media (max-width: 767px) {
+  .toast {
+    left: 16px;
+    right: 16px;
+    transform: none;
+    text-align: center;
+    bottom: 80px;
+    animation: slideUpMobile 0.3s ease;
+  }
+  
+  @keyframes slideUpMobile {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }

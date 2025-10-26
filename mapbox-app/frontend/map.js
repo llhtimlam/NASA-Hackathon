@@ -1,21 +1,9 @@
 /* Trails + NASA weather: search area, show spots, click draws trail and opens bottom sheet */
 
 (async () => {
-  function adjustMapPosition() {
-    const topbar = document.querySelector('.topbar');
-    const topbarHeight = topbar.offsetHeight;
-    const mapEl = document.getElementById('map');
-    
-    // Set map to start below topbar with some spacing
-    const topValue = topbarHeight + 20; // 20px spacing
-    mapEl.style.top = topValue + 'px';
-    
-    console.log(`Topbar height: ${topbarHeight}px, Map top: ${topValue}px`);
-  }
-
-  setTimeout(adjustMapPosition, 100);
   // --------- tiny utils ----------
   const $ = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
   const todayISO = () => new Date().toISOString().slice(0,10);
   const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.hidden = false; setTimeout(()=> t.hidden = true, 2000); };
 
@@ -29,6 +17,7 @@
   endDateInput.value = todayISO();
   let SELECTED_END_DATE = endDateInput.value;
   endDateInput.addEventListener('change', () => { SELECTED_END_DATE = endDateInput.value || todayISO(); });
+  
   // --------- bottom sheet ----------
   const sheetEl = $('#sheet');
   const sheetBody = $('#sheet-body');
@@ -49,53 +38,248 @@
     }
 
     const firstRow = rows[0];
-    if (!firstRow.values || !Array.isArray(firstRow.values)) {
-      return renderOldNasaTable(rows);
+    
+    // Check if this is the grouped format
+    if (firstRow.type === 'header') {
+      console.log('Rendering grouped table format');
+      return renderGroupedTable(rows);
     }
+    // Check if this is multi-date format
+    else if (firstRow.values && Array.isArray(firstRow.values) && firstRow.values.length > 0) {
+      console.log('Rendering multi-date table format');
+      return renderMultiDateTable(rows);
+    } else {
+      console.log('Rendering single-value table format');
+      return renderSingleValueTable(rows);
+    }
+  }
 
-    let html = '<div class="table-container"><table class="wx-table"><thead><tr>';
+  // Unified group behavior system
+  const GroupBehavior = {
+    handleGroupState(groupElement, isExpanded) {
+      const behaviorAttr = groupElement.getAttribute('data-behavior');
+      const behavior = behaviorAttr ? JSON.parse(behaviorAttr) : { collapsedView: 'FIRST_PARAM' };
+      const cells = groupElement.querySelectorAll('td:not(:first-child):not(:last-child)');
+      
+      console.log('Group state:', groupElement.querySelector('strong')?.textContent, 
+                  'expanded:', isExpanded, 'behavior:', behavior.collapsedView);
+      
+      // For SUMMARY behavior (Radiation group) - just style the AI summary
+      if (behavior.collapsedView === 'SUMMARY') {
+        if (!isExpanded) {
+          // Collapsed: Style the AI summary
+          cells.forEach(cell => {
+            cell.style.fontStyle = 'italic';
+            cell.style.color = '#7e57c2';
+            cell.style.fontWeight = '600';
+          });
+        } else {
+          // Expanded: Remove special styling (show actual values if any)
+          cells.forEach(cell => {
+            cell.style.fontStyle = 'normal';
+            cell.style.color = '';
+            cell.style.fontWeight = 'normal';
+          });
+        }
+      }
+    }
+  };
+
+  // Simplified table rendering - ALL groups treated the same
+  function renderGroupedTable(rows) {
+    let html = '<div class="table-container"><table class="wx-table collapsible-table"><thead><tr>';
     
-    // First column - Parameter
+    const firstRow = rows[0];
     html += `<th>${firstRow.label || 'Parameter'}</th>`;
-    
-    // Date columns
-    firstRow.values.forEach(date => {
-      html += `<th>${date}</th>`;
-    });
-    
-    // Last column - Unit
+    firstRow.values.forEach(date => html += `<th>${date}</th>`);
     html += `<th>${firstRow.unit || 'Unit'}</th></tr></thead><tbody>`;
     
-    // Data rows (skip the header row)
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      html += '<tr>';
       
-      // First column - Parameter name (fixed)
-      html += `<td><strong>${row.label || ''}</strong></td>`;
-      
-      // Date value columns (scrollable)
-      if (row.values && Array.isArray(row.values)) {
-        row.values.forEach(value => {
-          const displayValue = value !== null && value !== undefined ? 
-            (typeof value === 'number' ? value.toFixed(2) : value) : '—';
-          html += `<td>${displayValue}</td>`;
-        });
-      } else {
-        firstRow.values.forEach(() => {
-          html += '<td>—</td>';
-        });
+      if (row.type === 'group') {
+        const groupId = row.groupId || `group-${row.groupIndex || i}`;
+        const behavior = row.behavior || { collapsedView: 'FIRST_PARAM' };
+        
+        html += `<tr class="param-group collapsed" data-group-id="${groupId}" data-behavior='${JSON.stringify(behavior)}'>`;
+        html += `<td class="group-header">`;
+        html += `<span class="expand-icon">▶</span>`;
+        html += `<strong>${row.label}</strong>`;
+        html += `</td>`;
+        
+        // ALWAYS render the actual shortwave values
+        // GroupBehavior will handle showing AI summary when collapsed
+        if (row.values && Array.isArray(row.values)) {
+          row.values.forEach(value => html += `<td>${value}</td>`);
+        } else {
+          firstRow.values.forEach(() => html += '<td>—</td>');
+        }
+        
+        html += `<td style="color:#667085">${row.unit || ''}</td>`;
+        html += '</tr>';
+        
+      } else if (row.type === 'subparam') {
+        const groupId = row.groupId || `group-${row.groupIndex || findParentGroupIndex(rows, i)}`;
+        html += `<tr class="subparam" data-group-id="${groupId}" style="display: none;">`;
+        html += `<td class="subparam-label">${row.label}</td>`;
+        
+        if (row.values && Array.isArray(row.values)) {
+          row.values.forEach(value => {
+            const displayValue = value !== null && value !== undefined ? 
+              (typeof value === 'number' ? value.toFixed(2) : value) : '—';
+            html += `<td>${displayValue}</td>`;
+          });
+        } else {
+          firstRow.values.forEach(() => html += '<td>—</td>');
+        }
+        
+        html += `<td style="color:#667085">${row.unit || ''}</td>`;
+        html += '</tr>';
       }
-      
-      // Last column - Unit (fixed)
-      html += `<td style="color:#667085">${row.unit || ''}</td>`;
-      html += '</tr>';
     }
     
     html += '</tbody></table></div>';
     return html;
   }
-  
+
+  // Helper function to find parent group
+  function findParentGroupIndex(rows, currentIndex) {
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      if (rows[i].type === 'group') {
+        return rows[i].groupIndex;
+      }
+    }
+    return -1;
+  }
+  function findParentGroup(rows, currentIndex) {
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      if (rows[i].type === 'group') {
+        return rows[i];
+      }
+    }
+    return null;
+  }
+
+  function setupCollapsibleTables() {
+    console.log('Setting up collapsible tables...');
+    
+    // Initialize ALL groups
+    $$('.param-group').forEach(group => {
+      const groupId = group.getAttribute('data-group-id');
+      
+      // Ensure collapsed state
+      group.classList.add('collapsed');
+      group.classList.remove('expanded');
+      
+      const icon = group.querySelector('.expand-icon');
+      if (icon) icon.textContent = '▶';
+      
+      // Hide all subparams
+      const subparams = $$(`.subparam[data-group-id="${groupId}"]`);
+      subparams.forEach(subparam => {
+        subparam.style.display = 'none';
+      });
+      
+      // Apply initial collapsed behavior
+      GroupBehavior.handleGroupState(group, false);
+    });
+    
+    // Click event works on entire row
+    document.addEventListener('click', function(e) {
+      const groupRow = e.target.closest('.param-group');
+      
+      if (groupRow) {
+        const groupId = groupRow.getAttribute('data-group-id');
+        const isCurrentlyExpanded = groupRow.classList.contains('expanded');
+        
+        console.log('Group clicked:', groupId, 'currently expanded:', isCurrentlyExpanded);
+        
+        // Prevent multiple rapid clicks
+        if (groupRow.getAttribute('data-animating') === 'true') return;
+        groupRow.setAttribute('data-animating', 'true');
+        
+        if (isCurrentlyExpanded) {
+          collapseGroup(groupRow, groupId);
+        } else {
+          expandGroup(groupRow, groupId);
+        }
+        
+        // Reset animation lock
+        setTimeout(() => {
+          groupRow.removeAttribute('data-animating');
+        }, 300);
+      }
+    });
+    
+    console.log('Collapsible tables setup complete');
+  }
+
+  // Simple collapse/expand functions
+  function collapseGroup(groupRow, groupId) {
+    console.log('Collapsing group:', groupId);
+    groupRow.classList.remove('expanded');
+    groupRow.classList.add('collapsed');
+    groupRow.querySelector('.expand-icon').textContent = '▶';
+    
+    // Hide subparams
+    const subparams = $$(`.subparam[data-group-id="${groupId}"]`);
+    subparams.forEach(subparam => {
+      subparam.style.display = 'none';
+    });
+    
+    // Apply collapsed behavior
+    GroupBehavior.handleGroupState(groupRow, false);
+  }
+
+  function expandGroup(groupRow, groupId) {
+    console.log('Expanding group:', groupId);
+    groupRow.classList.remove('collapsed');
+    groupRow.classList.add('expanded');
+    groupRow.querySelector('.expand-icon').textContent = '▼';
+    
+    // Show subparams
+    const subparams = $$(`.subparam[data-group-id="${groupId}"]`);
+    subparams.forEach(subparam => {
+      subparam.style.display = 'table-row';
+    });
+    
+    // Apply expanded behavior
+    GroupBehavior.handleGroupState(groupRow, true);
+  }
+
+  // Simple collapse/expand functions
+  function collapseGroup(groupRow, groupId) {
+    console.log('Collapsing group:', groupId);
+    groupRow.classList.remove('expanded');
+    groupRow.classList.add('collapsed');
+    groupRow.querySelector('.expand-icon').textContent = '▶';
+    
+    // Hide subparams
+    const subparams = $$(`.subparam[data-group-id="${groupId}"]`);
+    subparams.forEach(subparam => {
+      subparam.style.display = 'none';
+    });
+    
+    // Apply collapsed behavior
+    GroupBehavior.handleGroupState(groupRow, false);
+  }
+
+  function expandGroup(groupRow, groupId) {
+    console.log('Expanding group:', groupId);
+    groupRow.classList.remove('collapsed');
+    groupRow.classList.add('expanded');
+    groupRow.querySelector('.expand-icon').textContent = '▼';
+    
+    // Show subparams
+    const subparams = $$(`.subparam[data-group-id="${groupId}"]`);
+    subparams.forEach(subparam => {
+      subparam.style.display = 'table-row';
+    });
+    
+    // Apply expanded behavior
+    GroupBehavior.handleGroupState(groupRow, true);
+  }
+
   // --------- script/CSS fallbacks for Geocoder ----------
   function loadScriptFromAny(urls) {
     return new Promise((resolve, reject) => {
@@ -222,8 +406,18 @@
       const wx = await (await fetch(`${BACKEND_URL}/nasa?start=${startDate}&end=${endDate}&lat=${center.lat}&lng=${center.lng}`)).json();
       
       sheetTitle.textContent = t.name || name || 'Trail';
-      sheetSub.textContent   = `${wx.date} • ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)}`;
+      sheetSub.textContent   = `${wx.startDate} to ${wx.endDate} • ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)}`;
       sheetBody.innerHTML    = renderNasaTable(wx.table || []);
+      
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        try {
+          setupCollapsibleTables();
+        } catch (e) {
+          console.warn('Collapsible setup failed:', e);
+        }
+      }, 100);
+      
       openSheet();
     }catch(err){
       console.warn('trail failed', err);
@@ -238,8 +432,9 @@
   if (geocoderLoaded && window.MapboxGeocoder) {
     const gc = new MapboxGeocoder({
       accessToken: MAPBOX_TOKEN, mapboxgl, marker: false, flyTo: false,
-      placeholder: 'Search area (e.g., Waterloo, Banff)…',
-      types: 'place,locality,region,district,neighborhood,postcode'
+      placeholder: 'Search area',
+      types: 'place,locality,region,district,neighborhood,postcode',
+      language: 'en'
     });
     gc.addTo(geocoderHost);
 
@@ -262,7 +457,7 @@
     // Fallback basic input
     const input = document.createElement('input');
     input.className = 'fallback-input';
-    input.placeholder = 'Search area (e.g., Waterloo, Banff)…';
+    input.placeholder = 'Search area';
     geocoderHost.appendChild(input);
 
     async function doSearch(q){

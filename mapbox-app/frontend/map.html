@@ -14,12 +14,12 @@
     <link rel="stylesheet" href="map.css" />
   </head>
   <body>
-    <!-- Top bar -->
-    <div class="topbar">
-      <div class="pill">
-        <div class="label">Search</div>
-        <div id="geocoder"></div>
-      </div>
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="pill pill--search">
+      <div class="label">Search</div>
+      <div id="geocoder"></div>
+    </div>
     <div class="pill pill--date">
       <label for="start-date">Start Date</label>
       <input type="date" id="start-date" name="start-date">
@@ -28,6 +28,7 @@
       <label for="end-date">End Date</label>
       <input type="date" id="end-date" name="end-date">
     </div>
+  </div>
 
     <!-- Map canvas -->
     <div id="map" class="map"></div>

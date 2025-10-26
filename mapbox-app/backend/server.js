@@ -261,82 +261,120 @@ app.get('/trail', async (req, res) => {
 
 app.get('/nasa', async (req, res) => {
   try {
-    const startDate = String(req.query.start || '').slice(0, 10); // YYYY-MM-DD
-    const endDate = String(req.query.end || '').slice(0, 10); // YYYY-MM-DD
-    const lat  = parseFloat(req.query.lat);
-    const lng  = parseFloat(req.query.lng);
+    const startDate = String(req.query.start || '').slice(0, 10);
+    const endDate = String(req.query.end || '').slice(0, 10);
+    const lat = parseFloat(req.query.lat);
+    const lng = parseFloat(req.query.lng);
 
-    // DEBUG: Check each condition
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || 
-        !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || 
-        !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
-      return res.status(400).json({ error: 'lat,lng,start=YYYY-MM-DD,end=YYYY-MM-DD required' });
+    // Validation
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return res.status(400).json({ error: 'Valid lat and lng required' });
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+      return res.status(400).json({ error: 'Valid start and end dates in YYYY-MM-DD format required' });
     }
 
     const startyyyymmdd = startDate.replaceAll('-', '');
     const endyyyymmdd = endDate.replaceAll('-', '');
     console.log(`Requesting NASA data for start: ${startDate}, end: ${endDate}, lat: ${lat}, lng: ${lng}`);
-    console.log(`Formatted dates for API: ${startyyyymmdd} to ${endyyyymmdd}`);
-    // Parameters chosen to match your UI (adjust as you like)
+    
     const params = [
-      'T2M', 'T2M_MAX', 'T2M_MIN',        // temp
-      'PRECTOTCORR',                       // precipitation
-      'RH2M', 'QV2M',                     // relative humidity
-      'WS10M',                             // wind speed
-      'ALLSKY_SFC_SW_DWN', 'ALLSKY_SFC_LW_DWN'  // solar/longwave
-      
+      'T2M', 'T2M_MAX', 'T2M_MIN',
+      'PRECTOTCORR',
+      'RH2M', 'QV2M',
+      'WS10M',
+      'ALLSKY_SFC_SW_DWN', 'ALLSKY_SFC_LW_DWN'
     ].join('%2C');
 
     const url = `https://power.larc.nasa.gov/api/projection/daily/point?&start=${startyyyymmdd}&end=${endyyyymmdd}&latitude=${lat}&longitude=${lng}&community=ag&parameters=${params}&format=JSON&user=T123&header=true&time-standard=utc&model=ensemble&scenario=ssp126`;
 
     console.log(`NASA API URL: ${url}`);
 
-    const r   = await fetchFn(url, { headers: { 'User-Agent': 'horuscast-nasa/1.0' } });
-    const j   = await r.json();
+    const r = await fetchFn(url, { headers: { 'User-Agent': 'horuscast-nasa/1.0' } });
+    const j = await r.json();
     const d = (j?.properties?.parameter) || {};
 
-    // Get all available dates from the first parameter
+    // Get available dates
     const firstParam = Object.keys(d)[0];
     const availableDates = d[firstParam] ? Object.keys(d[firstParam]) : [];
-
     console.log('Available dates:', availableDates);
 
-    // Create table header
-    const table = [];
-    table.push({
-      label: 'Parameter',
-      values: availableDates.map(date => `${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}`),
-      unit: 'Unit'
-    });
-
-    // Add data rows for each parameter
-    const parameters = [
-      { key: 'T2M', label: 'Temperature' },
-      { key: 'T2M_MAX', label: 'Max Temperature' },
-      { key: 'T2M_MIN', label: 'Min Temperature' },
-      { key: 'PRECTOTCORR', label: 'Precipitation' },
-      { key: 'QV2M', label: 'Specific Humidity' },
-      { key: 'RH2M', label: 'Relative Humidity' },
-      { key: 'WS10M', label: 'Wind Speed' },
-      { key: 'ALLSKY_SFC_SW_DWN', label: 'Shortwave Irradiance' },
-      { key: 'ALLSKY_SFC_LW_DWN', label: 'Longwave Irradiance' }
+    // Define parameter groups with behaviors
+    const parameterGroups = [
+      {
+        label: '🌡️ Temperature',
+        behavior: {
+          collapsedView: 'FIRST_PARAM',
+          showInMainRow: 'FIRST_PARAM',
+          showInSubparams: 'REST'
+        },
+        subParams: [
+          { key: 'T2M', label: 'Average Temperature' },
+          { key: 'T2M_MAX', label: 'Maximum Temperature' },
+          { key: 'T2M_MIN', label: 'Minimum Temperature' }
+        ]
+      },
+      {
+        label: '💧 Precipitation',
+        behavior: {
+          collapsedView: 'FIRST_PARAM',
+          showInMainRow: 'FIRST_PARAM',
+          showInSubparams: 'REST'
+        },
+        subParams: [
+          { key: 'PRECTOTCORR', label: 'Precipitation' },
+          { key: 'RH2M', label: 'Relative Humidity' },
+          { key: 'QV2M', label: 'Specific Humidity' }
+        ]
+      },
+      {
+        label: '🌬️ Wind Speed',
+        behavior: {
+          collapsedView: 'FIRST_PARAM',
+          showInMainRow: 'FIRST_PARAM',
+          showInSubparams: 'NONE'
+        },
+        subParams: [
+          { key: 'WS10M', label: 'Wind Speed' }
+        ]
+      },
+      {
+        label: '☀️ Radiation',
+        behavior: {
+          collapsedView: 'AI_SUMMARY',
+          showInMainRow: 'AI_SUMMARY',
+          showInSubparams: 'ALL'
+        },
+        subParams: [
+          { key: 'ALLSKY_SFC_SW_DWN', label: 'Shortwave Radiation' },
+          { key: 'ALLSKY_SFC_LW_DWN', label: 'Longwave Radiation' }
+        ]
+      }
     ];
 
-    parameters.forEach(param => {
-      const values = availableDates.map(date => d[param.key]?.[date]);
-      table.push({
-        label: param.label,
-        values: values,
-        unit: getUnit(param.key)
-      });
-    });
+    // Helper function to generate AI summary
+    function generateRadiationSummary(shortwaveData, longwaveData) {
+      if (!shortwaveData || !longwaveData) return '📊 Analyzing...';
+      
+      const shortwaveValues = Object.values(shortwaveData).filter(val => val != null);
+      const longwaveValues = Object.values(longwaveData).filter(val => val != null);
+      
+      if (shortwaveValues.length === 0) return '📊 No data';
+      
+      const avgShortwave = shortwaveValues.reduce((a, b) => a + b, 0) / shortwaveValues.length;
+      
+      if (avgShortwave > 300) return '🌞 High';
+      if (avgShortwave < 100) return '🌥️ Low';
+      return '⛅ Moderate';
+    }
 
+    // Helper function to get unit
     function getUnit(paramKey) {
       const units = {
         'T2M': '°C',
         'T2M_MAX': '°C', 
         'T2M_MIN': '°C',
-        'PRECTOTCORR': 'mm',
+        'PRECTOTCORR': 'mm/day',
         'QV2M': 'g/kg',
         'RH2M': '%',
         'WS10M': 'm/s',
@@ -346,6 +384,112 @@ app.get('/nasa', async (req, res) => {
       return units[paramKey] || '';
     }
 
+    // Helper function to create subparameter rows
+    function createSubparamRow(subParam, groupIndex, d, availableDates) {
+      const values = availableDates.map(date => {
+        const value = d[subParam.key]?.[date];
+        return value !== null && value !== undefined ? 
+          (typeof value === 'number' ? value.toFixed(2) : value) : '—';
+      });
+      
+      return {
+        type: 'subparam',
+        label: subParam.label,
+        values: values,
+        unit: getUnit(subParam.key),
+        groupIndex: groupIndex,
+        groupId: `group-${groupIndex}`
+      };
+    }
+
+    // Generic group processor
+    function processParameterGroup(group, groupIndex, d, availableDates) {
+      const firstParam = group.subParams[0];
+      const firstParamValues = availableDates.map(date => {
+        const value = d[firstParam.key]?.[date];
+        return value !== null && value !== undefined ? 
+          (typeof value === 'number' ? value.toFixed(2) : value) : '—';
+      });
+      
+      // Generate AI summary if needed
+      let aiSummary = null;
+      if (group.behavior.collapsedView === 'AI_SUMMARY') {
+        const shortwaveData = d['ALLSKY_SFC_SW_DWN'];
+        const longwaveData = d['ALLSKY_SFC_LW_DWN'];
+        aiSummary = generateRadiationSummary(shortwaveData, longwaveData);
+      }
+      
+      // Determine what to show in main row
+      let mainRowValues, mainRowUnit;
+      
+      switch (group.behavior.showInMainRow) {
+        case 'AI_SUMMARY':
+          mainRowValues = availableDates.map(() => aiSummary);
+          mainRowUnit = '🚧';
+          break;
+        case 'FIRST_PARAM':
+        default:
+          mainRowValues = firstParamValues;
+          mainRowUnit = getUnit(firstParam.key);
+          break;
+      }
+      
+      // Add main group row
+      const rows = [{
+        type: 'group',
+        label: group.label,
+        behavior: group.behavior,
+        expanded: false,
+        values: mainRowValues,
+        unit: mainRowUnit,
+        groupIndex: groupIndex,
+        groupId: `group-${groupIndex}`,
+        aiSummary: aiSummary
+      }];
+      
+      // Add subparameters based on behavior
+      switch (group.behavior.showInSubparams) {
+        case 'ALL':
+          // Include ALL parameters as subparams
+          group.subParams.forEach((subParam, subIndex) => {
+            rows.push(createSubparamRow(subParam, groupIndex, d, availableDates));
+          });
+          break;
+          
+        case 'REST':
+          // Include all parameters EXCEPT the first one
+          group.subParams.forEach((subParam, subIndex) => {
+            if (subIndex > 0) {
+              rows.push(createSubparamRow(subParam, groupIndex, d, availableDates));
+            }
+          });
+          break;
+          
+        case 'NONE':
+          // No subparameters
+          break;
+      }
+      
+      return rows;
+    }
+
+    // Main table building logic
+    const table = [];
+    
+    // Create header row
+    table.push({
+      type: 'header',
+      label: 'Parameter',
+      values: availableDates.map(date => `${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}`),
+      unit: 'Unit'
+    });
+
+    // Process all groups using the generic processor
+    parameterGroups.forEach((group, groupIndex) => {
+      const groupRows = processParameterGroup(group, groupIndex, d, availableDates);
+      table.push(...groupRows);
+    });
+
     res.json({ 
       startDate, 
       endDate,
@@ -354,7 +498,6 @@ app.get('/nasa', async (req, res) => {
     });
   } catch (e) {
     console.error('NASA error:', e);
-    console.log(`NASA API URL: ${url}`);
     res.status(500).json({ error: 'nasa failed' });
   }
 });
