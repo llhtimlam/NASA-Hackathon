@@ -7,6 +7,146 @@
   const todayISO = () => new Date().toISOString().slice(0,10);
   const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.hidden = false; setTimeout(()=> t.hidden = true, 2000); };
 
+  // --------- Activity Selection ----------
+  const activityModal = $('#activity-modal');
+  const activitySelector = $('#activity-selector');
+  const currentActivityIcon = $('#current-activity');
+  const searchToggle = $('#search-toggle');
+  const geocoderContainer = $('#geocoder');
+  let currentActivity = 'hiking';
+  let searchExpanded = true;
+
+  // Activity icons mapping - UPDATED WITH BETTER ICONS
+  const activityIcons = {
+    hiking: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="m3 12 5.5 5.5 3-3 8.5-8.5"></path>
+      <path d="M14 7l3 3"></path>
+      <path d="M5 21h14"></path>
+    </svg>`,
+    stargazing: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+    </svg>`,
+    water: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M2 20c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1"></path>
+      <path d="M2 16c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1"></path>
+    </svg>`,
+    winter: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="12" y1="2" x2="12" y2="22"></line>
+      <line x1="2" y1="12" x2="22" y2="12"></line>
+      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+      <line x1="19.07" y1="4.93" x2="4.93" y2="19.07"></line>
+      <line x1="4.93" y1="19.07" x2="19.07" y2="4.93"></line>
+      <line x1="19.07" y1="19.07" x2="4.93" y2="4.93"></line>
+    </svg>`
+  };
+
+  // Only add event listeners if elements exist
+  if (activitySelector) {
+    activitySelector.addEventListener('click', () => {
+      if (activityModal) {
+        activityModal.setAttribute('aria-hidden', 'false');
+      }
+    });
+  }
+
+  if ($('#activity-modal-close')) {
+    $('#activity-modal-close').addEventListener('click', () => {
+      if (activityModal) {
+        activityModal.setAttribute('aria-hidden', 'true');
+      }
+    });
+  }
+
+  if (activityModal) {
+    activityModal.addEventListener('click', (e) => {
+      if (e.target === activityModal) {
+        activityModal.setAttribute('aria-hidden', 'true');
+      }
+    });
+  }
+
+  // Handle activity selection
+  const activityOptions = $$('.activity-option');
+  if (activityOptions.length > 0) {
+    activityOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const activity = option.getAttribute('data-activity');
+        const iconType = option.getAttribute('data-icon');
+        
+        currentActivity = activity;
+        if (currentActivityIcon) {
+          currentActivityIcon.innerHTML = activityIcons[iconType];
+        }
+        
+        // Update the UI to show selected activity
+        toast(`Activity set to: ${option.querySelector('.activity-option__label').textContent}`);
+        
+        // Close modal
+        if (activityModal) {
+          activityModal.setAttribute('aria-hidden', 'true');
+        }
+        
+        // Here you can add logic to change the map behavior based on activity
+        console.log(`Activity changed to: ${activity}`);
+      });
+    });
+  }
+
+  // Search toggle functionality - only if element exists
+  if (searchToggle) {
+    searchToggle.addEventListener('click', () => {
+      searchExpanded = !searchExpanded;
+      
+      if (searchExpanded) {
+        if (geocoderContainer) {
+          geocoderContainer.classList.remove('collapsed');
+        }
+        // Focus the search input if geocoder is loaded
+        setTimeout(() => {
+          if (geocoderContainer) {
+            const searchInput = geocoderContainer.querySelector('input');
+            if (searchInput) {
+              searchInput.focus();
+              // Force mobile keyboard to open
+              searchInput.setAttribute('autofocus', 'true');
+            }
+          }
+        }, 100);
+      } else {
+        if (geocoderContainer) {
+          geocoderContainer.classList.add('collapsed');
+        }
+      }
+    });
+  }
+
+  // Add touch event support for mobile
+  document.addEventListener('touchstart', function(e) {
+    // Close search if clicking outside on mobile
+    if (window.innerWidth < 768 && searchExpanded) {
+      const isSearchClick = e.target.closest('.pill--search');
+      if (!isSearchClick) {
+        searchExpanded = false;
+        if (geocoderContainer) {
+          geocoderContainer.classList.add('collapsed');
+        }
+      }
+    }
+  });
+
+  // Settings toggle (placeholder for future functionality)
+  if ($('#settings-toggle')) {
+    $('#settings-toggle').addEventListener('click', () => {
+      toast('Settings coming soon!');
+      // Add settings modal functionality here
+    });
+  }
+
+  // Initialize search as expanded by default
+  if (geocoderContainer) {
+    geocoderContainer.classList.remove('collapsed');
+  }
+
   // --------- date control ----------
   const startDateInput = $('#start-date');
   startDateInput.value = todayISO();
@@ -18,6 +158,64 @@
   let SELECTED_END_DATE = endDateInput.value;
   endDateInput.addEventListener('change', () => { SELECTED_END_DATE = endDateInput.value || todayISO(); });
   
+  // Store the current trail info for reloading
+  let currentTrailInfo = null;
+
+  // Modified date change handlers
+  function handleDateChange() {
+    SELECTED_START_DATE = startDateInput.value || todayISO();
+    SELECTED_END_DATE = endDateInput.value || todayISO();
+    
+    // If a trail is currently displayed, reload the weather data
+    if (currentTrailInfo) {
+      reloadWeatherForCurrentTrail();
+    }
+  }
+
+  startDateInput.addEventListener('change', handleDateChange);
+  endDateInput.addEventListener('change', handleDateChange);
+
+  // Function to reload weather for the currently displayed trail
+  async function reloadWeatherForCurrentTrail() {
+    if (!currentTrailInfo) return;
+    
+    try {
+      // Show loading state in the sheet
+      showSheetLoading();
+      
+      const { id, name, center } = currentTrailInfo;
+      
+      // Fetch new weather data with updated dates
+      const wx = await (await fetch(`${BACKEND_URL}/nasa?start=${SELECTED_START_DATE}&end=${SELECTED_END_DATE}&lat=${center.lat}&lng=${center.lng}`)).json();
+      
+      // Update sheet content
+      if (sheetTitle) sheetTitle.textContent = name || 'Trail';
+      if (sheetSub) sheetSub.textContent = `${wx.startDate} to ${wx.endDate} • ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)}`;
+      if (sheetBody) sheetBody.innerHTML = renderNasaTable(wx.table || []);
+      
+      // Show success message
+      toast('Weather data updated');
+      
+      // Re-setup collapsible tables
+      setTimeout(() => {
+        try {
+          setupCollapsibleTables();
+        } catch (e) {
+          console.warn('Collapsible setup failed:', e);
+        }
+      }, 100);
+      
+    } catch(err) {
+      console.warn('Weather reload failed', err);
+      toast('Failed to update weather data');
+      
+      // Show error in sheet
+      if (sheetBody) {
+        sheetBody.innerHTML = '<p style="text-align: center; color: #667085; padding: 40px;">Failed to update weather data</p>';
+      }
+    }
+  }
+
   // --------- bottom sheet ----------
   const sheetEl = $('#sheet');
   const sheetBody = $('#sheet-body');
@@ -247,39 +445,6 @@
     GroupBehavior.handleGroupState(groupRow, true);
   }
 
-  // Simple collapse/expand functions
-  function collapseGroup(groupRow, groupId) {
-    console.log('Collapsing group:', groupId);
-    groupRow.classList.remove('expanded');
-    groupRow.classList.add('collapsed');
-    groupRow.querySelector('.expand-icon').textContent = '▶';
-    
-    // Hide subparams
-    const subparams = $$(`.subparam[data-group-id="${groupId}"]`);
-    subparams.forEach(subparam => {
-      subparam.style.display = 'none';
-    });
-    
-    // Apply collapsed behavior
-    GroupBehavior.handleGroupState(groupRow, false);
-  }
-
-  function expandGroup(groupRow, groupId) {
-    console.log('Expanding group:', groupId);
-    groupRow.classList.remove('collapsed');
-    groupRow.classList.add('expanded');
-    groupRow.querySelector('.expand-icon').textContent = '▼';
-    
-    // Show subparams
-    const subparams = $$(`.subparam[data-group-id="${groupId}"]`);
-    subparams.forEach(subparam => {
-      subparam.style.display = 'table-row';
-    });
-    
-    // Apply expanded behavior
-    GroupBehavior.handleGroupState(groupRow, true);
-  }
-
   // --------- script/CSS fallbacks for Geocoder ----------
   function loadScriptFromAny(urls) {
     return new Promise((resolve, reject) => {
@@ -343,21 +508,61 @@
   }
   const geocoderHost = $('#geocoder');
 
+  // --------- LOADING STATES ----------
+  function showLoading(message = 'Loading...') {
+    const loadingEl = document.createElement('div');
+    loadingEl.className = 'loading-overlay';
+    loadingEl.innerHTML = `
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        ${message}
+      </div>
+    `;
+    loadingEl.id = 'current-loading';
+    document.body.appendChild(loadingEl);
+    return loadingEl;
+  }
+
+  function hideLoading() {
+    const loadingEl = document.getElementById('current-loading');
+    if (loadingEl) {
+      loadingEl.remove();
+    }
+  }
+
+  function showSheetLoading() {
+    if (sheetBody) {
+      sheetBody.innerHTML = `
+        <div style="display: flex; justify-content: center; padding: 40px;">
+          <div class="loading">
+            <div class="loading-spinner"></div>
+            Loading weather data...
+          </div>
+        </div>
+      `;
+    }
+  }
+  // --------- Hike Fetching and Display ----------
   // store current markers so we can clear when searching again
   let spotMarkers = [];
   function clearMarkers(){ spotMarkers.forEach(m => m.remove()); spotMarkers = []; }
 
   async function fetchHikes(lat, lng, radius=12000){
+    const loading = showLoading('Finding hiking trails...');
+  try {
     const resp = await fetch(`${BACKEND_URL}/hikes?lat=${lat}&lng=${lng}&radius=${radius}`);
     const data = await resp.json();
     clearMarkers();
     const spots = data.spots || [];
-    if (!spots.length) { toast('No hikes found here'); return; }
+    if (!spots.length) { 
+      toast('No hikes found here'); 
+      return; 
+    }
     for (const s of spots) {
       const el = document.createElement('div');
       el.style.width = el.style.height = '14px';
       el.style.borderRadius = '50%';
-      el.style.background = '#22c55e';   // green dot
+      el.style.background = '#22c55e';
       el.style.boxShadow = '0 0 0 2px #fff';
       const marker = new mapboxgl.Marker(el).setLngLat([s.center.lng, s.center.lat]).addTo(map);
       marker.getElement().title = s.name;
@@ -365,8 +570,15 @@
       marker.getElement().addEventListener('click', () => showTrail(s.id, s.name));
       spotMarkers.push(marker);
     }
-    toast(`${spots.length} hike spots found`);
+      toast(`${spots.length} hike spots found`);
+    } catch (error) {
+      console.error('Failed to fetch hikes:', error);
+      toast('Failed to load hiking trails');
+    } finally {
+      hideLoading();
+    }
   }
+
 
   // draw selected trail
   const TRAIL_SRC = 'trail-src';
@@ -391,8 +603,15 @@
   }
 
   async function showTrail(id, name){
-    try{
+    showSheetLoading();
+    openSheet();
+    
+    try {
+      // Load trail data
+      const trailLoading = showLoading('Loading trail...');
       const t = await (await fetch(`${BACKEND_URL}/trail?id=${encodeURIComponent(id)}`)).json();
+      hideLoading();
+      
       const geo = { type:'Feature', geometry: t.geometry, properties: { name: t.name } };
       setTrailGeoJSON(geo);
       const b = boundsFromGeom(t.geometry);
@@ -400,16 +619,42 @@
 
       // NASA weather for the trail's center + date
       const center = b.getCenter();
-      const startDate = SELECTED_START_DATE || todayISO();
-      const endDate = SELECTED_END_DATE || todayISO();
+      
+      // Store current trail info for potential reloads
+      currentTrailInfo = {
+        id,
+        name: t.name || name,
+        center: center,
+        geometry: t.geometry
+      };
 
-      const wx = await (await fetch(`${BACKEND_URL}/nasa?start=${startDate}&end=${endDate}&lat=${center.lat}&lng=${center.lng}`)).json();
+      // Add visual indicator to date inputs
+      startDateInput.classList.add('date-input-active');
+      endDateInput.classList.add('date-input-active');
+
+      // And remove it when closing the sheet
+      function closeSheet(){ 
+        sheetEl.classList.remove('sheet--open'); 
+        scrim.classList.remove('sheet--open'); 
+        sheetEl.setAttribute('aria-hidden','true');
+        currentTrailInfo = null;
+        
+        // Remove visual indicator
+        startDateInput.classList.remove('date-input-active');
+        endDateInput.classList.remove('date-input-active');
+      }
+
+      // Show weather loading
+      showSheetLoading();
       
+      const wx = await (await fetch(`${BACKEND_URL}/nasa?start=${SELECTED_START_DATE}&end=${SELECTED_END_DATE}&lat=${center.lat}&lng=${center.lng}`)).json();
+      
+      // Update sheet content
       sheetTitle.textContent = t.name || name || 'Trail';
-      sheetSub.textContent   = `${wx.startDate} to ${wx.endDate} • ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)}`;
-      sheetBody.innerHTML    = renderNasaTable(wx.table || []);
+      sheetSub.textContent = `${wx.startDate} to ${wx.endDate} • ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)}`;
+      sheetBody.innerHTML = renderNasaTable(wx.table || []);
       
-      // Small delay to ensure DOM is ready
+      // Setup collapsible tables
       setTimeout(() => {
         try {
           setupCollapsibleTables();
@@ -418,12 +663,34 @@
         }
       }, 100);
       
-      openSheet();
-    }catch(err){
+    } catch(err) {
       console.warn('trail failed', err);
       toast('Could not load trail');
+      hideLoading();
+      
+      // Clear current trail info on error
+      currentTrailInfo = null;
+      
+      // Show error in sheet
+      if (sheetBody) {
+        sheetBody.innerHTML = '<p style="text-align: center; color: #667085; padding: 40px;">Failed to load trail data</p>';
+      }
     }
   }
+
+  // Clear current trail info when sheet is closed
+  function closeSheet(){ 
+    sheetEl.classList.remove('sheet--open'); 
+    scrim.classList.remove('sheet--open'); 
+    sheetEl.setAttribute('aria-hidden','true');
+    currentTrailInfo = null;
+  }
+
+  // Also clear when clicking on the scrim
+  scrim.addEventListener('click', () => {
+    closeSheet();
+    currentTrailInfo = null;
+  });
 
   function bboxCenter(bbox){   // [minX,minY,maxX,maxY] -> [lng,lat]
     return [(bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2];
@@ -445,7 +712,6 @@
         const b = new mapboxgl.LngLatBounds([r.bbox[0], r.bbox[1]], [r.bbox[2], r.bbox[3]]);
         map.fitBounds(b, { padding: { top: 140, bottom: 40, left: 40, right: 40 }, duration: 700 });
         const c = b.getCenter(); center = [c.lng, c.lat];
-        // derive a radius roughly from bbox size
         radius = Math.min(25000, Math.max(6000, Math.hypot(r.bbox[2]-r.bbox[0], r.bbox[3]-r.bbox[1]) * 70000));
       } else if (r.center) {
         center = r.center;
@@ -453,6 +719,7 @@
       }
       if (center) await fetchHikes(center[1], center[0], radius);
     });
+  
   } else {
     // Fallback basic input
     const input = document.createElement('input');

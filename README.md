@@ -28,6 +28,8 @@ npm install node-fetch
 
 3. Initiate the server
 node server.js
+or
+npm start to enable console.log
 
 # Website Flow
 1. Open index.html with live server to enter the **Welcome** page

@@ -14,21 +14,104 @@
     <link rel="stylesheet" href="map.css" />
   </head>
   <body>
-  <!-- Top bar -->
-  <div class="topbar">
-    <div class="pill pill--search">
-      <div class="label">Search</div>
-      <div id="geocoder"></div>
+    <!-- Top bar -->
+    <div class="topbar">
+      <!-- Settings in top left -->
+      <div class="pill pill--settings">
+        <div class="settings-icon" id="settings-toggle">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Search bar -->
+      <div class="pill pill--search">
+        <div class="search-icon" id="search-toggle">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+        </div>
+        <div id="geocoder" class="geocoder-container"></div>
+      </div>
+
+      <!-- Activity Selector -->
+      <div class="pill pill--activity">
+        <div class="activity-selector" id="activity-selector">
+          <div class="activity-icon" id="current-activity">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="m3 12 5.5 5.5 3-3 8.5-8.5"></path>
+              <path d="M14 7l3 3"></path>
+              <path d="M5 21h14"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Date inputs -->
+      <div class="pill pill--date">
+        <label for="start-date">Start Date</label>
+        <input type="date" id="start-date" name="start-date">
+      </div>
+      <div class="pill pill--date">
+        <label for="end-date">End Date</label>
+        <input type="date" id="end-date" name="end-date">
+      </div>
     </div>
-    <div class="pill pill--date">
-      <label for="start-date">Start Date</label>
-      <input type="date" id="start-date" name="start-date">
+
+    <!-- Activity Selection Modal -->
+    <div id="activity-modal" class="modal" aria-hidden="true">
+      <div class="modal__content">
+        <header class="modal__header">
+          <h2>Select Activity</h2>
+          <button class="modal__close" id="activity-modal-close">✕</button>
+        </header>
+        <div class="activity-grid">
+          <div class="activity-option" data-activity="hiking" data-icon="hiking">
+            <div class="activity-option__icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m3 12 5.5 5.5 3-3 8.5-8.5"></path>
+                <path d="M14 7l3 3"></path>
+                <path d="M5 21h14"></path>
+              </svg>
+            </div>
+            <span class="activity-option__label">Hiking</span>
+          </div>
+          <div class="activity-option" data-activity="stargazing" data-icon="stargazing">
+            <div class="activity-option__icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </div>
+            <span class="activity-option__label">Stargazing</span>
+          </div>
+          <div class="activity-option" data-activity="water-sports" data-icon="water">
+            <div class="activity-option__icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 20c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1"></path>
+                <path d="M2 16c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1"></path>
+              </svg>
+            </div>
+            <span class="activity-option__label">Water Sports</span>
+          </div>
+          <div class="activity-option" data-activity="winter-sports" data-icon="winter">
+            <div class="activity-option__icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="2" x2="12" y2="22"></line>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                <line x1="19.07" y1="4.93" x2="4.93" y2="19.07"></line>
+                <line x1="4.93" y1="19.07" x2="19.07" y2="4.93"></line>
+                <line x1="19.07" y1="19.07" x2="4.93" y2="4.93"></line>
+              </svg>
+            </div>
+            <span class="activity-option__label">Winter Sports</span>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="pill pill--date">
-      <label for="end-date">End Date</label>
-      <input type="date" id="end-date" name="end-date">
-    </div>
-  </div>
 
     <!-- Map canvas -->
     <div id="map" class="map"></div>
@@ -56,7 +139,6 @@
       src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"
       defer
     ></script>
-    <script src="config.js" defer></script>
     <script src="map.js" defer></script>
   </body>
 </html>
