@@ -6,7 +6,6 @@
   const $$ = (s) => document.querySelectorAll(s);
   const todayISO = () => new Date().toISOString().slice(0,10);
   const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.hidden = false; setTimeout(()=> t.hidden = true, 2000); };
-
   // --------- Activity Selection ----------
   const activityModal = $('#activity-modal');
   const activitySelector = $('#activity-selector');
@@ -18,25 +17,29 @@
 
   // Activity icons mapping - UPDATED WITH BETTER ICONS
   const activityIcons = {
-    hiking: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="m3 12 5.5 5.5 3-3 8.5-8.5"></path>
-      <path d="M14 7l3 3"></path>
-      <path d="M5 21h14"></path>
+    hiking: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m8 3 4 8 5-5 5 15H2L8 3z"></path>
     </svg>`,
-    stargazing: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+    stargazing: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
     </svg>`,
-    water: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M2 20c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1"></path>
-      <path d="M2 16c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1"></path>
+    water: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M2 20c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1"></path>
+    <path d="M2 16c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1c.5-.5 1-1 2-1s1.5.5 2 1c.5.5 1 1 2 1s1.5-.5 2-1"></path>
     </svg>`,
-    winter: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <line x1="12" y1="2" x2="12" y2="22"></line>
-      <line x1="2" y1="12" x2="22" y2="12"></line>
-      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
-      <line x1="19.07" y1="4.93" x2="4.93" y2="19.07"></line>
-      <line x1="4.93" y1="19.07" x2="19.07" y2="4.93"></line>
-      <line x1="19.07" y1="19.07" x2="4.93" y2="4.93"></line>
+    winter: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2v20"></path>
+    <path d="m4.93 4.93 14.14 14.14"></path>
+    <path d="m19.07 4.93-14.14 14.14"></path>
+    <path d="M8 4l2 2-2 2"></path>
+    <path d="M16 4l-2 2 2 2"></path>
+    <path d="M20 8l-2 2-2-2"></path>
+    <path d="M20 16l-2-2 2-2"></path>
+    <path d="M16 20l-2-2 2-2"></path>
+    <path d="M8 20l2-2-2-2"></path>
+    <path d="M4 16l2-2-2-2"></path>
+    <path d="M4 8l2 2-2 2"></path>
+    <path d="M2 12h20"></path>
     </svg>`
   };
 
@@ -487,7 +490,7 @@
   const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/outdoors-v12',
-    center: [-79.3832, 43.6532], zoom: 11
+    center: [138.6, -34.928], zoom: 12
   });
   
   map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
@@ -578,7 +581,6 @@
       hideLoading();
     }
   }
-
 
   // draw selected trail
   const TRAIL_SRC = 'trail-src';
@@ -745,4 +747,253 @@
     }
     input.addEventListener('keydown', (ev)=> { if (ev.key === 'Enter') doSearch(input.value); });
   }
+  // Tutorial system
+  function initTutorial() {
+    // Wait a bit for DOM to be fully ready
+    setTimeout(() => {
+      const tutorialOverlay = document.getElementById('tutorial-overlay');
+      const tutorialPopup = tutorialOverlay?.querySelector('.tutorial-popup');
+      const tutorialTrigger = document.getElementById('tutorial-trigger');
+      const tutorialTitle = document.getElementById('tutorial-title');
+      const tutorialDescription = document.getElementById('tutorial-description');
+      const tutorialHighlight = document.getElementById('tutorial-highlight');
+      const tutorialStep = document.getElementById('tutorial-step');
+      const tutorialTotal = document.getElementById('tutorial-total');
+      const tutorialPrev = document.getElementById('tutorial-prev');
+      const tutorialNext = document.getElementById('tutorial-next');
+      const tutorialSkip = document.getElementById('tutorial-skip');
+
+      if (!tutorialOverlay || !tutorialPopup || !tutorialNext) {
+        console.error('❌ Essential tutorial elements missing!');
+        return;
+      }
+      let currentTutorialStep = 0;
+      const tutorialSteps = [
+        {
+          title: "Welcome to HorusCast!",
+          description: "This interactive map helps you find trails and check weather conditions.",
+          highlight: "Let's explore the main features together!",
+          element: null,
+          position: { x: '50%', y: '50%' } // Center for welcome
+        },
+        {
+          title: "Activity Selection",
+          description: "Choose your preferred outdoor activity.",
+          highlight: "Hiking, stargazing, water sports, or winter activities",
+          element: '.pill--activity',
+          position: 'right' // Position popup to the right of the activity button
+        },
+        {
+          title: "Search Locations", 
+          description: "Find trails in any area.",
+          highlight: "Search for cities, regions, or postcodes",
+          element: '.pill--search',
+          position: 'bottom' // Position below search bar
+        },
+        {
+          title: "Date Selection",
+          description: "Check weather for your trip dates.",
+          highlight: "Set start and end dates for forecasts",
+          element: '.pill--date',
+          position: 'bottom' // Position below date inputs
+        },
+        {
+          title: "Ready to Explore!",
+          description: "You're all set to start your adventure.",
+          highlight: "Click trail markers to see routes and weather data",
+          element: null,
+          position: { x: '50%', y: '50%' } // Center for finish
+        }
+      ];
+
+      if (tutorialTotal) {
+        tutorialTotal.textContent = tutorialSteps.length;
+      }
+
+      function positionPopup(element, position) {
+        if (!element) {
+          // Center the popup if no target element
+          tutorialPopup.style.left = '50%';
+          tutorialPopup.style.top = '50%';
+          tutorialPopup.style.transform = 'translate(-50%, -50%)';
+          tutorialPopup.removeAttribute('data-position');
+          return;
+        }
+
+        const rect = element.getBoundingClientRect();
+        const popupWidth = 320;
+        const popupHeight = 280;
+        const padding = 20;
+
+        let left, top, transformOrigin;
+
+        switch (position) {
+          case 'top':
+            left = rect.left + (rect.width / 2) - (popupWidth / 2);
+            top = rect.top - popupHeight - padding;
+            transformOrigin = 'bottom center';
+            break;
+          case 'bottom':
+            left = rect.left + (rect.width / 2) - (popupWidth / 2);
+            top = rect.bottom + padding;
+            transformOrigin = 'top center';
+            break;
+          case 'left':
+            left = rect.left - popupWidth - padding;
+            top = rect.top + (rect.height / 2) - (popupHeight / 2);
+            transformOrigin = 'right center';
+            break;
+          case 'right':
+            left = rect.right + padding;
+            top = rect.top + (rect.height / 2) - (popupHeight / 2);
+            transformOrigin = 'left center';
+            break;
+          default:
+            // Custom position (for welcome/finish screens)
+            if (position.x && position.y) {
+              left = position.x === '50%' ? '50%' : `${position.x}px`;
+              top = position.y === '50%' ? '50%' : `${position.y}px`;
+              tutorialPopup.style.left = left;
+              tutorialPopup.style.top = top;
+              tutorialPopup.style.transform = position.x === '50%' ? 'translate(-50%, -50%)' : 'none';
+              return;
+            }
+        }
+
+        // Ensure popup stays within viewport
+        left = Math.max(padding, Math.min(left, window.innerWidth - popupWidth - padding));
+        top = Math.max(padding, Math.min(top, window.innerHeight - popupHeight - padding));
+
+        tutorialPopup.style.left = `${left}px`;
+        tutorialPopup.style.top = `${top}px`;
+        tutorialPopup.style.transform = 'none';
+        tutorialPopup.setAttribute('data-position', position);
+      }
+
+      function showTutorialStep(stepIndex) {
+        if (stepIndex < 0 || stepIndex >= tutorialSteps.length) return;
+        
+        currentTutorialStep = stepIndex;
+        const step = tutorialSteps[stepIndex];
+        
+        // Update content
+        if (tutorialTitle) tutorialTitle.textContent = step.title;
+        if (tutorialDescription) tutorialDescription.textContent = step.description;
+        if (tutorialHighlight) tutorialHighlight.textContent = step.highlight;
+        if (tutorialStep) tutorialStep.textContent = stepIndex + 1;
+        
+        // Remove previous highlights
+        document.querySelectorAll('.tutorial-highlight-element').forEach(el => {
+          el.classList.remove('tutorial-highlight-element');
+        });
+        
+        // Position popup and highlight element
+        let targetElement = null;
+        if (step.element) {
+          targetElement = document.querySelector(step.element);
+          if (targetElement) {
+            targetElement.classList.add('tutorial-highlight-element');
+          }
+        }
+        
+        positionPopup(targetElement, step.position);
+        
+        // Update button states
+        if (tutorialPrev) {
+          tutorialPrev.disabled = stepIndex === 0;
+        }
+        
+        if (tutorialNext) {
+          tutorialNext.textContent = stepIndex === tutorialSteps.length - 1 ? 'Finish' : 'Next';
+        }
+        
+        if (tutorialSkip) {
+          tutorialSkip.style.display = stepIndex === tutorialSteps.length - 1 ? 'none' : 'block';
+        }
+        
+        // Show tutorial
+        tutorialOverlay.hidden = false;
+      }
+
+      function nextTutorialStep() {
+        if (currentTutorialStep < tutorialSteps.length - 1) {
+          showTutorialStep(currentTutorialStep + 1);
+        } else {
+          finishTutorial();
+        }
+      }
+
+      function prevTutorialStep() {
+        if (currentTutorialStep > 0) {
+          showTutorialStep(currentTutorialStep - 1);
+        }
+      }
+
+      function finishTutorial() {
+        tutorialOverlay.hidden = true;
+        
+        // Remove highlights
+        document.querySelectorAll('.tutorial-highlight-element').forEach(el => {
+          el.classList.remove('tutorial-highlight-element');
+        });
+        
+        localStorage.setItem('horuscast-tutorial-completed', 'true');
+        toast('Tutorial completed! Happy exploring! 🗺️');
+      }
+
+      function skipTutorial() {
+        tutorialOverlay.hidden = true;
+        document.querySelectorAll('.tutorial-highlight-element').forEach(el => {
+          el.classList.remove('tutorial-highlight-element');
+        });
+        toast('You can always click the help button to see the tutorial again.');
+      }
+
+      function startTutorial() {
+        showTutorialStep(0);
+      }
+
+      // ATTACH EVENT LISTENERS
+      
+      if (tutorialTrigger) {
+        tutorialTrigger.addEventListener('click', startTutorial);
+      }
+      
+      if (tutorialNext) {
+        tutorialNext.addEventListener('click', nextTutorialStep);
+      }
+      
+      if (tutorialPrev) {
+        tutorialPrev.addEventListener('click', prevTutorialStep);
+      }
+      
+      if (tutorialSkip) {
+        tutorialSkip.addEventListener('click', skipTutorial);
+      }
+      
+      // Close tutorial when clicking outside popup
+      tutorialOverlay.addEventListener('click', (e) => {
+        if (e.target === tutorialOverlay) {
+          skipTutorial();
+        }
+      });
+
+      // Prevent clicks inside popup from closing
+      tutorialPopup.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+
+      // Auto-start on first visit
+      const tutorialCompleted = localStorage.getItem('horuscast-tutorial-completed');
+      if (!tutorialCompleted) {
+        setTimeout(startTutorial, 1000);
+      }
+    }, 100);
+  }
+  function resetTutorial() {
+    localStorage.removeItem('horuscast-tutorial-completed');
+    console.log('✅ Tutorial reset - will auto-start on next page load');
+    toast('Tutorial has been reset');
+  }
+  initTutorial();
 })();

@@ -5,6 +5,222 @@ html, body {
   overflow: hidden;
 }
 
+/* ===== TUTORIAL STYLES ===== */
+.tutorial-trigger {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 50px;
+  height: 50px;
+  background: rgba(127, 143, 119, 0.95);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.tutorial-trigger:hover {
+  transform: scale(1.1);
+  background: rgba(127, 143, 119, 1);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+}
+
+.tutorial-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  z-index: 5;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.tutorial-popup {
+  position: absolute;
+  background: white;
+  border-radius: 16px;
+  max-width: 320px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease;
+  z-index: 5;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Positioning for different elements */
+.tutorial-popup[data-position="top"] {
+  transform-origin: bottom center;
+}
+
+.tutorial-popup[data-position="bottom"] {
+  transform-origin: top center;
+}
+
+.tutorial-popup[data-position="left"] {
+  transform-origin: right center;
+}
+
+.tutorial-popup[data-position="right"] {
+  transform-origin: left center;
+}
+
+.tutorial-content {
+  padding: 20px;
+  text-align: left;
+}
+
+.tutorial-content h3 {
+  margin: 0 0 8px 0;
+  font: 700 18px/1.2 Inter, system-ui, sans-serif;
+  color: #1a1a1a;
+}
+
+.tutorial-content p {
+  margin: 0 0 12px 0;
+  color: #667085;
+  font: 400 14px/1.4 Inter, system-ui, sans-serif;
+}
+
+.tutorial-highlight {
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #7f8f77;
+  font: 500 13px/1.4 Inter, system-ui, sans-serif;
+  color: #1a1a1a;
+}
+
+.tutorial-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #eef2f6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tutorial-progress {
+  font: 600 13px/1 Inter, system-ui, sans-serif;
+  color: #667085;
+}
+
+.tutorial-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tutorial-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font: 600 13px/1 Inter, system-ui, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 60px;
+}
+
+.tutorial-btn--primary {
+  background: #7f8f77;
+  color: white;
+}
+
+.tutorial-btn--primary:hover {
+  background: #6a7a62;
+  transform: translateY(-1px);
+}
+
+.tutorial-btn--secondary {
+  background: #f2f4f7;
+  color: #1a1a1a;
+}
+
+.tutorial-btn--secondary:hover {
+  background: #e4e7ec;
+}
+
+.tutorial-btn--text {
+  background: transparent;
+  color: #667085;
+  min-width: auto;
+}
+
+.tutorial-btn--text:hover {
+  color: #1a1a1a;
+}
+
+.tutorial-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Highlight effect for elements being explained */
+.tutorial-highlight-element {
+  position: relative;
+  z-index: 10001;
+  box-shadow: 0 0 0 3px #7f8f77, 0 0 0 6px rgba(127, 143, 119, 0.3);
+  border-radius: 12px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(127, 143, 119, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(127, 143, 119, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(127, 143, 119, 0);
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 767px) {
+  .tutorial-popup {
+    max-width: 280px;
+    margin: 20px;
+  }
+  
+  .tutorial-footer {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .tutorial-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .tutorial-trigger {
+    bottom: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+  }
+}
+
 /* ===== MAP STYLES ===== */
 .map { 
   position: absolute; 
