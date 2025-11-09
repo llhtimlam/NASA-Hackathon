@@ -310,8 +310,8 @@ app.get('/nasa', async (req, res) => {
         },
         subParams: [
           { key: 'T2M', label: 'Average Temperature' },
-          { key: 'T2M_MAX', label: 'Maximum Temperature' },
-          { key: 'T2M_MIN', label: 'Minimum Temperature' }
+          { key: 'T2M_MAX', label: 'Max Temp' },
+          { key: 'T2M_MIN', label: 'Min Temp' }
         ]
       },
       {

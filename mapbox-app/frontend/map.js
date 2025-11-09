@@ -10,11 +10,14 @@
   const activityModal = $('#activity-modal');
   const activitySelector = $('#activity-selector');
   const currentActivityIcon = $('#current-activity');
-  const searchToggle = $('#search-toggle');
+  const search = $('.search-icon')
   const geocoderContainer = $('#geocoder');
   let currentActivity = 'hiking';
   let searchExpanded = true;
-
+  if (geocoderContainer) {
+    geocoderContainer.classList.remove('collapsed');
+  }
+  
   // Activity icons mapping - UPDATED WITH BETTER ICONS
   const activityIcons = {
     hiking: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -76,66 +79,71 @@
         const activity = option.getAttribute('data-activity');
         const iconType = option.getAttribute('data-icon');
         
+        // Disable previous activity mode
+        if (currentActivity === 'stargazing') {
+          disableStargazingMode();
+        } else if (currentActivity === 'hiking') {
+          disableHikingMode();
+        }
+        
         currentActivity = activity;
         if (currentActivityIcon) {
           currentActivityIcon.innerHTML = activityIcons[iconType];
         }
-        
-        // Update the UI to show selected activity
-        toast(`Activity set to: ${option.querySelector('.activity-option__label').textContent}`);
-        
+        // Clear existing data
+        clearMarkers();
+        if (map.getLayer(TRAIL_LAYER)) {
+          map.removeLayer(TRAIL_LAYER);
+        }
+        if (map.getSource(TRAIL_SRC)) {
+          map.removeSource(TRAIL_SRC);
+        }
+        closeSheet();
+        // Enable new activity mode
+        if (activity === 'stargazing') {
+          enableStargazingMode();
+        } else if (activity === 'hiking') {
+          enableHikingMode();
+        } else if (activity === 'water' || activity === 'winter') {
+          // Placeholder for future activity modes
+          toast(`${option.querySelector('.activity-option__label').textContent} mode - feature coming soon!`);
+          // Clear any existing markers for these modes
+          clearMarkers();
+        }
         // Close modal
         if (activityModal) {
           activityModal.setAttribute('aria-hidden', 'true');
         }
-        
-        // Here you can add logic to change the map behavior based on activity
-        console.log(`Activity changed to: ${activity}`);
       });
     });
   }
 
-  // Search toggle functionality - only if element exists
-  if (searchToggle) {
-    searchToggle.addEventListener('click', () => {
-      searchExpanded = !searchExpanded;
-      
-      if (searchExpanded) {
-        if (geocoderContainer) {
-          geocoderContainer.classList.remove('collapsed');
-        }
-        // Focus the search input if geocoder is loaded
-        setTimeout(() => {
-          if (geocoderContainer) {
-            const searchInput = geocoderContainer.querySelector('input');
-            if (searchInput) {
-              searchInput.focus();
-              // Force mobile keyboard to open
-              searchInput.setAttribute('autofocus', 'true');
-            }
-          }
-        }, 100);
-      } else {
-        if (geocoderContainer) {
-          geocoderContainer.classList.add('collapsed');
-        }
+  // Search Trail
+  if (search) {
+    search.addEventListener('click', () => {
+      if (currentActivity === 'hiking') {
+        // In hiking mode: Search for trails in current view
+        const bounds = map.getBounds();
+        const center = bounds.getCenter();
+        const zoom = map.getZoom();
+        
+        // Calculate appropriate radius
+        let radius;
+        if (zoom >= 14) radius = 3000;
+        else if (zoom >= 12) radius = 6000;
+        else if (zoom >= 10) radius = 12000;
+        else radius = 15000;
+        fetchHikes(center.lat, center.lng, radius);
+        toast('🔍 Searching for trails in this area...');
+        // Update currentMapBounds to prevent immediate re-fetching
+        currentMapBounds = {
+          bounds: bounds,
+          center: center,
+          zoom: zoom
+        };
       }
     });
   }
-
-  // Add touch event support for mobile
-  document.addEventListener('touchstart', function(e) {
-    // Close search if clicking outside on mobile
-    if (window.innerWidth < 768 && searchExpanded) {
-      const isSearchClick = e.target.closest('.pill--search');
-      if (!isSearchClick) {
-        searchExpanded = false;
-        if (geocoderContainer) {
-          geocoderContainer.classList.add('collapsed');
-        }
-      }
-    }
-  });
 
   // Settings toggle (placeholder for future functionality)
   if ($('#settings-toggle')) {
@@ -145,11 +153,20 @@
     });
   }
 
-  // Initialize search as expanded by default
-  if (geocoderContainer) {
-    geocoderContainer.classList.remove('collapsed');
+  function setupMobileOptimizations() {
+    const isMobile = window.innerWidth <= 767;
+    
+    if (isMobile) {
+      // Improve touch interactions
+      document.addEventListener('touchstart', function() {}, { passive: true });
+      
+      // Prevent double-tap zoom on interactive elements
+      const interactiveElements = document.querySelectorAll('.pill, .search-icon, .settings-icon, .activity-icon');
+      interactiveElements.forEach(el => {
+        el.style.touchAction = 'manipulation';
+      });
+    }
   }
-
   // --------- date control ----------
   const startDateInput = $('#start-date');
   startDateInput.value = todayISO();
@@ -242,15 +259,12 @@
     
     // Check if this is the grouped format
     if (firstRow.type === 'header') {
-      console.log('Rendering grouped table format');
       return renderGroupedTable(rows);
     }
     // Check if this is multi-date format
     else if (firstRow.values && Array.isArray(firstRow.values) && firstRow.values.length > 0) {
-      console.log('Rendering multi-date table format');
       return renderMultiDateTable(rows);
     } else {
-      console.log('Rendering single-value table format');
       return renderSingleValueTable(rows);
     }
   }
@@ -261,9 +275,6 @@
       const behaviorAttr = groupElement.getAttribute('data-behavior');
       const behavior = behaviorAttr ? JSON.parse(behaviorAttr) : { collapsedView: 'FIRST_PARAM' };
       const cells = groupElement.querySelectorAll('td:not(:first-child):not(:last-child)');
-      
-      console.log('Group state:', groupElement.querySelector('strong')?.textContent, 
-                  'expanded:', isExpanded, 'behavior:', behavior.collapsedView);
       
       // For SUMMARY behavior (Radiation group) - just style the AI summary
       if (behavior.collapsedView === 'SUMMARY') {
@@ -362,7 +373,6 @@
   }
 
   function setupCollapsibleTables() {
-    console.log('Setting up collapsible tables...');
     
     // Initialize ALL groups
     $$('.param-group').forEach(group => {
@@ -393,8 +403,6 @@
         const groupId = groupRow.getAttribute('data-group-id');
         const isCurrentlyExpanded = groupRow.classList.contains('expanded');
         
-        console.log('Group clicked:', groupId, 'currently expanded:', isCurrentlyExpanded);
-        
         // Prevent multiple rapid clicks
         if (groupRow.getAttribute('data-animating') === 'true') return;
         groupRow.setAttribute('data-animating', 'true');
@@ -411,13 +419,10 @@
         }, 300);
       }
     });
-    
-    console.log('Collapsible tables setup complete');
   }
 
   // Simple collapse/expand functions
   function collapseGroup(groupRow, groupId) {
-    console.log('Collapsing group:', groupId);
     groupRow.classList.remove('expanded');
     groupRow.classList.add('collapsed');
     groupRow.querySelector('.expand-icon').textContent = '▶';
@@ -433,7 +438,6 @@
   }
 
   function expandGroup(groupRow, groupId) {
-    console.log('Expanding group:', groupId);
     groupRow.classList.remove('collapsed');
     groupRow.classList.add('expanded');
     groupRow.querySelector('.expand-icon').textContent = '▼';
@@ -514,11 +518,11 @@
   // --------- LOADING STATES ----------
   function showLoading(message = 'Loading...') {
     const loadingEl = document.createElement('div');
-    loadingEl.className = 'loading-overlay';
+    loadingEl.className = 'loading-corner';
     loadingEl.innerHTML = `
-      <div class="loading">
-        <div class="loading-spinner"></div>
-        ${message}
+      <div class="loading-indicator">
+        <div class="loading-spinner-small"></div>
+        <span class="loading-text">${message}</span>
       </div>
     `;
     loadingEl.id = 'current-loading';
@@ -529,7 +533,12 @@
   function hideLoading() {
     const loadingEl = document.getElementById('current-loading');
     if (loadingEl) {
-      loadingEl.remove();
+      // Add fade out animation
+      loadingEl.style.opacity = '0';
+      loadingEl.style.transform = 'translateY(10px)';
+      setTimeout(() => {
+        loadingEl.remove();
+      }, 300);
     }
   }
 
@@ -547,25 +556,161 @@
   }
   // --------- Hike Fetching and Display ----------
   // store current markers so we can clear when searching again
+  let hikingMode = false;
+  let currentMapBounds = null;
+  let hikeFetchDebounce = null;
   let spotMarkers = [];
-  function clearMarkers(){ spotMarkers.forEach(m => m.remove()); spotMarkers = []; }
+  // Improved hiking mode with better trail loading
+  let isTrailSelected = false; // Track if a trail is currently selected
+  
+  map.isMoving = function() {
+    return map._moving || map._easing;
+  };
+  
+  function enableHikingMode() {
+    hikingMode = true;
+    isTrailSelected = false; // Reset when switching to hiking mode
+    const canvas = map.getCanvas();
+    canvas.classList.add('hiking-mode');
+    canvas.classList.remove('stargazing-mode');
+
+    // Clear elements
+    disableStargazingMode();
+    clearMarkers();
+    // Fetch trails for current map view immediately
+    setTimeout(() => {
+      fetchTrailsForCurrentView();
+    }, 300);
+    
+    // Listen to map movements to update trails
+    map.on('dragend', handleMapMoveForHiking);
+    map.on('moveend', handleMapMoveForHiking);
+    map.on('zoomend', handleMapMoveForHiking);
+    
+    toast('🥾 Hiking mode: Trails will update automatically as you move the map');
+  }
+
+  function disableHikingMode() {
+    hikingMode = false;
+    const canvas = map.getCanvas();
+    canvas.classList.remove('hiking-mode');
+    canvas.style.cursor = '';
+    
+    // Remove event listeners
+    map.off('dragend', handleMapMoveForHiking);
+    map.off('moveend', handleMapMoveForHiking);
+    map.off('zoomend', handleMapMoveForHiking);
+    
+  }
+
+  function handleMapMoveForHiking() {
+    // Don't fetch new trails if a trail is currently selected
+    if (isTrailSelected || map.isMoving()) return;
+    
+    const currentZoom = map.getZoom();
+    // Don't fetch trails if zoomed out too far
+    if (currentZoom < 9) {
+      clearMarkers();
+      if (currentZoom > 6) { // Only show toast if reasonably zoomed in
+        toast('Zoom in to see hiking trails');
+      }
+      return;
+    }
+    
+    // Check if we've moved significantly enough to warrant a new search
+    const bounds = map.getBounds();
+    const center = bounds.getCenter(); // Get current center
+    
+    if (currentMapBounds) {
+      // Check if center has moved significantly
+      const centerMoved = 
+        Math.abs(currentMapBounds.center.lng - center.lng) > 0.01 || 
+        Math.abs(currentMapBounds.center.lat - center.lat) > 0.01;
+      
+      const zoomChanged = Math.abs(currentMapBounds.zoom - currentZoom) > 0.3;
+      
+      if (!centerMoved && !zoomChanged) return;
+    }
+    
+    // Debounce to avoid too many API calls
+    if (hikeFetchDebounce) {
+      clearTimeout(hikeFetchDebounce);
+    }
+    
+    hikeFetchDebounce = setTimeout(() => {
+      fetchTrailsForCurrentView();
+    }, 500);
+  }
+
+  function fetchTrailsForCurrentView() {
+    if (!hikingMode || isTrailSelected) return;
+    
+    const bounds = map.getBounds();
+    const center = bounds.getCenter();
+    const zoom = map.getZoom();
+    
+    // Don't fetch trails if zoomed out too far (shows too many trails)
+    if (zoom < 9) {
+      clearMarkers();
+      return;
+    }
+    
+    // Validate center coordinates before proceeding
+    if (!center || typeof center.lng !== 'number' || typeof center.lat !== 'number') {
+      console.error('Invalid map center coordinates:', center);
+      return;
+    }
+    
+    // Calculate search radius based on current view size
+    const boundsWidth = bounds.getNorthEast().lng - bounds.getSouthWest().lng;
+    const boundsHeight = bounds.getNorthEast().lat - bounds.getSouthWest().lat;
+    const viewSize = Math.max(boundsWidth, boundsHeight);
+
+    const radiusInMeters = viewSize * 111000 * 0.7; // 70% of view width in meters
+    const radius = Math.min(30000, Math.max(3000, radiusInMeters));
+    
+    // console.log('Auto-fetching trails at:', center, 'zoom:', zoom, 'radius:', radius);
+    fetchHikes(center.lat, center.lng, radius);
+    
+    // Store current view state WITH center
+    currentMapBounds = {
+      bounds: bounds,
+      center: center,
+      zoom: zoom
+    };
+  }
+
+  function clearMarkers(){ 
+    spotMarkers.forEach(m => m.remove()); 
+    spotMarkers = []; 
+  }
 
   async function fetchHikes(lat, lng, radius=12000){
-    const loading = showLoading('Finding hiking trails...');
+    // Only fetch hikes if in hiking mode
+    if (currentActivity !== 'hiking') return;
+    
+    // Show loading only when zoomed in enough to see individual trails
+    const shouldShowLoading = map.getZoom() > 11;
+    const loading = shouldShowLoading ? showLoading('Finding trails...') : null;
   try {
     const resp = await fetch(`${BACKEND_URL}/hikes?lat=${lat}&lng=${lng}&radius=${radius}`);
     const data = await resp.json();
     clearMarkers();
     const spots = data.spots || [];
     if (!spots.length) { 
-      toast('No hikes found here'); 
+       // Only show toast if we're not in a very zoomed-out view
+      if (shouldShowLoading && map.getZoom() > 10) {
+        setTimeout(() => {
+          toast('No trails found in this area');
+        }, 300);
+      }
       return; 
     }
     for (const s of spots) {
       const el = document.createElement('div');
       el.style.width = el.style.height = '14px';
       el.style.borderRadius = '50%';
-      el.style.background = '#22c55e';
+      el.style.background = '#208a47ff';
       el.style.boxShadow = '0 0 0 2px #fff';
       const marker = new mapboxgl.Marker(el).setLngLat([s.center.lng, s.center.lat]).addTo(map);
       marker.getElement().title = s.name;
@@ -573,12 +718,21 @@
       marker.getElement().addEventListener('click', () => showTrail(s.id, s.name));
       spotMarkers.push(marker);
     }
-      toast(`${spots.length} hike spots found`);
+    // Only show success toast for significant results
+    if (spots.length > 2 && shouldShowLoading) {
+      toast(`Found ${spots.length} trails`);
+    }
     } catch (error) {
       console.error('Failed to fetch hikes:', error);
-      toast('Failed to load hiking trails');
+      if (shouldShowLoading) {
+        setTimeout(() => {
+          toast('Failed to load trails');
+        }, 300);
+      }
     } finally {
-      hideLoading();
+      if (loading) {
+        setTimeout(hideLoading, 400);
+      }
     }
   }
 
@@ -605,6 +759,8 @@
   }
 
   async function showTrail(id, name){
+    if (currentActivity !== 'hiking') return;
+    isTrailSelected = true; // Mark that a trail is selected
     showSheetLoading();
     openSheet();
     
@@ -651,10 +807,22 @@
       
       const wx = await (await fetch(`${BACKEND_URL}/nasa?start=${SELECTED_START_DATE}&end=${SELECTED_END_DATE}&lat=${center.lat}&lng=${center.lng}`)).json();
       
-      // Update sheet content
+      // Add hiking mode indicator
+      const modeIndicator = `
+        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">🥾</span>
+            <div>
+              <h4 style="margin: 0 0 4px 0; font-size: 16px;">Hiking Mode</h4>
+              <p style="margin: 0; font-size: 12px; opacity: 0.9;">Trail weather conditions and hiking recommendations</p>
+            </div>
+          </div>
+        </div>
+      `;
+      
       sheetTitle.textContent = t.name || name || 'Trail';
       sheetSub.textContent = `${wx.startDate} to ${wx.endDate} • ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)}`;
-      sheetBody.innerHTML = renderNasaTable(wx.table || []);
+      sheetBody.innerHTML = modeIndicator + renderNasaTable(wx.table || []);
       
       // Setup collapsible tables
       setTimeout(() => {
@@ -669,9 +837,8 @@
       console.warn('trail failed', err);
       toast('Could not load trail');
       hideLoading();
-      
-      // Clear current trail info on error
-      currentTrailInfo = null;
+      isTrailSelected = false; // Reset on error
+      currentTrailInfo = null; // Clear current trail info on error
       
       // Show error in sheet
       if (sheetBody) {
@@ -685,7 +852,15 @@
     sheetEl.classList.remove('sheet--open'); 
     scrim.classList.remove('sheet--open'); 
     sheetEl.setAttribute('aria-hidden','true');
-    currentTrailInfo = null;
+    // Reset trail selection after a short delay
+    setTimeout(() => {
+      isTrailSelected = false;
+      currentTrailInfo = null;
+    }, 500); // Give user time to see the trail before clearing
+    
+    // Remove visual indicator
+    startDateInput.classList.remove('date-input-active');
+    endDateInput.classList.remove('date-input-active');
   }
 
   // Also clear when clicking on the scrim
@@ -708,19 +883,31 @@
     gc.addTo(geocoderHost);
 
     gc.on('result', async (e) => {
-      const r = e.result;
-      let center, radius = 12000;
-      if (r.bbox) {
-        const b = new mapboxgl.LngLatBounds([r.bbox[0], r.bbox[1]], [r.bbox[2], r.bbox[3]]);
-        map.fitBounds(b, { padding: { top: 140, bottom: 40, left: 40, right: 40 }, duration: 700 });
-        const c = b.getCenter(); center = [c.lng, c.lat];
-        radius = Math.min(25000, Math.max(6000, Math.hypot(r.bbox[2]-r.bbox[0], r.bbox[3]-r.bbox[1]) * 70000));
-      } else if (r.center) {
-        center = r.center;
-        map.easeTo({ center, zoom: 12, duration: 500 });
-      }
-      if (center) await fetchHikes(center[1], center[0], radius);
-    });
+    const r = e.result;
+    let center, radius = 12000;
+    
+    if (r.bbox) {
+      const b = new mapboxgl.LngLatBounds([r.bbox[0], r.bbox[1]], [r.bbox[2], r.bbox[3]]);
+      map.fitBounds(b, { padding: { top: 140, bottom: 40, left: 40, right: 40 }, duration: 700 });
+      center = b.getCenter(); // Keep as LngLat object {lng, lat}
+      radius = Math.min(25000, Math.max(6000, Math.hypot(r.bbox[2]-r.bbox[0], r.bbox[3]-r.bbox[1]) * 70000));
+    } else if (r.center) {
+      // Convert array [lng, lat] to object {lng, lat}
+      center = { lng: r.center[0], lat: r.center[1] };
+      map.easeTo({ center: r.center, zoom: 12, duration: 500 });
+    }
+    
+    // For hiking mode, search for trails in the new area
+    if (center && currentActivity === 'hiking') {
+      // Wait a bit for the map to finish moving, then search for trails
+      setTimeout(() => {
+        console.log('Searching trails after geocoder result');
+        fetchHikes(center.lat, center.lng, radius);
+      }, 800);
+    } else if (center && currentActivity === 'stargazing') {
+      toast(`Area searched - click on the map to get weather data`);
+    }
+  });
   
   } else {
     // Fallback basic input
@@ -747,6 +934,191 @@
     }
     input.addEventListener('keydown', (ev)=> { if (ev.key === 'Enter') doSearch(input.value); });
   }
+  // Initialize hiking mode if it's the default
+  // Add this at the end of your main function
+  setTimeout(() => {
+    if (currentActivity === 'hiking') {
+      enableHikingMode();
+    }
+  }, 1000);
+  // Stargazing mode variables
+  let stargazingPin = null;
+  let stargazingMode = false;
+
+  function enableStargazingMode() {
+    stargazingMode = true;
+    const canvas = map.getCanvas();
+    canvas.classList.add('stargazing-mode');
+    // Clear other modes
+    clearMarkers();
+    if (map.getLayer(TRAIL_LAYER)) {
+      map.removeLayer(TRAIL_LAYER);
+    }
+    if (map.getSource(TRAIL_SRC)) {
+      map.removeSource(TRAIL_SRC);
+    }
+    
+    // Add visual feedback layer for stargazing
+    if (!map.getSource('stargazing-feedback')) {
+      map.addSource('stargazing-feedback', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: []
+        }
+      });
+      
+      map.addLayer({
+        id: 'stargazing-click-circle',
+        type: 'circle',
+        source: 'stargazing-feedback',
+        paint: {
+          'circle-radius': 8,
+          'circle-color': '#7e57c2',
+          'circle-opacity': 0.6,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff'
+        }
+      });
+    }
+    
+    // Add click event listener for the map
+    map.on('click', handleMapClickForStargazing);
+    toast('🎯 Stargazing mode: Orbital Cannon Target coordinates for weather analysis');
+  }
+  
+  function disableStargazingMode() {
+    stargazingMode = false;
+    // Reset cursor
+    const canvas = map.getCanvas();
+    canvas.style.cursor = '';
+    canvas.classList.remove('stargazing-mode');
+    
+    // Remove pin if exists
+    if (stargazingPin) {
+      stargazingPin.remove();
+      stargazingPin = null;
+    }
+  }
+
+  function handleMapClickForStargazing(e) {
+    if (!stargazingMode) return;
+    
+    const { lng, lat } = e.lngLat;
+    
+    // Show visual feedback (optional - without pin)
+    showClickFeedback([lng, lat]);
+    
+    // Fetch weather data for this location
+    fetchStargazingWeather(lat, lng);
+  }
+
+  function showClickFeedback(coordinates) {
+      if (!map.getSource('stargazing-feedback')) return;
+      
+      // Create a temporary circle at click location
+      const clickFeature = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: coordinates
+        }
+      };
+      
+      map.getSource('stargazing-feedback').setData(clickFeature);
+      
+      // Set red color for the circle
+      map.setPaintProperty('stargazing-click-circle', 'circle-color', '#FF6B35');
+      map.setPaintProperty('stargazing-click-circle', 'circle-stroke-color', '#FF8C42');
+      map.setPaintProperty('stargazing-click-circle', 'circle-stroke-width', 2);
+      
+      // Animate the circle - start small and bright red
+      map.setPaintProperty('stargazing-click-circle', 'circle-radius', 3);
+      map.setPaintProperty('stargazing-click-circle', 'circle-opacity', 1);
+      
+      // Animate out with red shockwave effect
+      setTimeout(() => {
+        map.setPaintProperty('stargazing-click-circle', 'circle-radius', 10);
+        map.setPaintProperty('stargazing-click-circle', 'circle-opacity', 0.7);
+        map.setPaintProperty('stargazing-click-circle', 'circle-color', '#FF8C42');
+      }, 100);
+      
+      setTimeout(() => {
+        map.setPaintProperty('stargazing-click-circle', 'circle-radius', 25);
+        map.setPaintProperty('stargazing-click-circle', 'circle-opacity', 0.4);
+        map.setPaintProperty('stargazing-click-circle', 'circle-color', '#FF4500');
+      }, 300);
+      
+      setTimeout(() => {
+        map.setPaintProperty('stargazing-click-circle', 'circle-radius', 40);
+        map.setPaintProperty('stargazing-click-circle', 'circle-opacity', 0.1);
+        map.setPaintProperty('stargazing-click-circle', 'circle-color', '#FF6347');
+      }, 500);
+      
+      // Clear after animation
+      setTimeout(() => {
+        map.getSource('stargazing-feedback').setData({
+          type: 'FeatureCollection',
+          features: []
+        });
+      }, 800);
+  }
+
+  async function fetchStargazingWeather(lat, lng) {
+    showSheetLoading();
+    openSheet();
+    
+    try {
+      const wx = await (await fetch(`${BACKEND_URL}/nasa?start=${SELECTED_START_DATE}&end=${SELECTED_END_DATE}&lat=${lat}&lng=${lng}`)).json();
+      
+      // Store current location info for potential reloads (similar to hiking)
+      currentTrailInfo = {
+        id: `stargazing-${Date.now()}`,
+        name: 'Stargazing Location',
+        center: { lat, lng },
+        geometry: null
+      };
+      // Add visual indicator to date inputs
+      startDateInput.classList.add('date-input-active');
+      endDateInput.classList.add('date-input-active');
+      // Update sheet content for stargazing
+      sheetTitle.textContent = 'Stargazing Location';
+      sheetSub.textContent = `${wx.startDate} to ${wx.endDate} • ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      sheetBody.innerHTML = renderNasaTable(wx.table || []);
+      
+      // Mode indicator and stargazing-specific info
+      const modeIndicator = `
+        <div style="background: linear-gradient(135deg, #7e57c2, #5e35b1); color: white; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">⭐</span>
+            <div>
+              <h4 style="margin: 0 0 4px 0; font-size: 16px;">Stargazing Mode</h4>
+              <p style="margin: 0; font-size: 12px; opacity: 0.9;">Ideal conditions: Clear skies, low humidity, minimal cloud cover</p>
+            </div>
+          </div>
+        </div>
+      `;
+      sheetBody.innerHTML = modeIndicator + sheetBody.innerHTML;
+      
+      // Setup collapsible tables
+      setTimeout(() => {
+        try {
+          setupCollapsibleTables();
+        } catch (e) {
+          console.warn('Collapsible setup failed:', e);
+        }
+      }, 100);
+      
+    } catch(err) {
+      console.warn('Stargazing weather failed', err);
+      toast('Could not load weather data for this location');
+      // Clear current location info on error
+      currentTrailInfo = null;
+      if (sheetBody) {
+        sheetBody.innerHTML = '<p style="text-align: center; color: #667085; padding: 40px;">Failed to load weather data</p>';
+      }
+    }
+  }
   // Tutorial system
   function initTutorial() {
     // Wait a bit for DOM to be fully ready
@@ -771,38 +1143,59 @@
       const tutorialSteps = [
         {
           title: "Welcome to HorusCast!",
-          description: "This interactive map helps you find trails and check weather conditions.",
+          description: "This interactive map helps you find outdoor spots and check weather conditions for your adventures.",
           highlight: "Let's explore the main features together!",
           element: null,
-          position: { x: '50%', y: '50%' } // Center for welcome
+          position: { x: '50%', y: '50%' }
         },
         {
           title: "Activity Selection",
-          description: "Choose your preferred outdoor activity.",
-          highlight: "Hiking, stargazing, water sports, or winter activities",
+          description: "Choose your preferred outdoor activity. We'll focus on the two available modes.",
+          highlight: "Hiking 🥾 and Stargazing 🌟 modes are ready to use!",
           element: '.pill--activity',
-          position: 'right' // Position popup to the right of the activity button
+          position: 'right'
+        },
+        {
+          title: "Hiking Mode", 
+          description: "Find and explore hiking trails automatically.",
+          highlight: "Trails appear as you move the map. Click any green dot to see trail details and weather.",
+          element: '.pill--activity',
+          position: 'right'
+        },
+        {
+          title: "Stargazing Mode",
+          description: "Check weather conditions for perfect stargazing spots.",
+          highlight: "Click anywhere on the map to drop a pin and get detailed weather data for that location.",
+          element: '.pill--activity',
+          position: 'right'
         },
         {
           title: "Search Locations", 
-          description: "Find trails in any area.",
-          highlight: "Search for cities, regions, or postcodes",
+          description: "Find areas quickly using the search bar.",
+          highlight: "Works in both modes - finds trails for hiking or areas for stargazing",
           element: '.pill--search',
-          position: 'bottom' // Position below search bar
+          position: 'bottom'
+        },
+        {
+          title: "Search Button", 
+          description: "Quickly find trails or focus the search bar.",
+          highlight: "In hiking mode: Finds trails in your current view.",
+          element: '.search-icon',
+          position: 'bottom'
         },
         {
           title: "Date Selection",
-          description: "Check weather for your trip dates.",
-          highlight: "Set start and end dates for forecasts",
+          description: "Check weather for your planned trip dates.",
+          highlight: "Set start and end dates to see forecasts for your adventure timeframe",
           element: '.pill--date',
-          position: 'bottom' // Position below date inputs
+          position: 'bottom'
         },
         {
           title: "Ready to Explore!",
-          description: "You're all set to start your adventure.",
-          highlight: "Click trail markers to see routes and weather data",
+          description: "You're all set to start your outdoor adventure.",
+          highlight: "Switch between hiking and stargazing modes to get tailored information for your activity!",
           element: null,
-          position: { x: '50%', y: '50%' } // Center for finish
+          position: { x: '50%', y: '50%' }
         }
       ];
 
@@ -993,7 +1386,7 @@
   function resetTutorial() {
     localStorage.removeItem('horuscast-tutorial-completed');
     console.log('✅ Tutorial reset - will auto-start on next page load');
-    toast('Tutorial has been reset');
+    toast('Tutorial has been reset'); //type localStorage.clear() in F12
   }
   initTutorial();
 })();

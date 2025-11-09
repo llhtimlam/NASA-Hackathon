@@ -178,10 +178,28 @@ html, body {
 /* Highlight effect for elements being explained */
 .tutorial-highlight-element {
   position: relative;
-  z-index: 10001;
+  z-index: 5;
   box-shadow: 0 0 0 3px #7f8f77, 0 0 0 6px rgba(127, 143, 119, 0.3);
   border-radius: 12px;
   animation: pulse 2s infinite;
+}
+
+/* Specific styling for search icon */
+.search-icon.tutorial-highlight-element {
+  z-index: 2;
+  background: rgba(255, 255, 119, 0.3);
+  border-radius: 10px;
+  padding: 4px;
+  margin: -4px;
+  transform: scale(1.1);
+  transition: all 0.3s ease;
+}
+
+/* Ensure parent containers don't clip the animation */
+.pill--search.tutorial-highlight-element,
+.pill.tutorial-highlight-element {
+  overflow: visible;
+  position: relative;
 }
 
 @keyframes pulse {
@@ -306,15 +324,14 @@ html, body {
 .geocoder-container {
   width: 100%;
   min-width: 0;
+  pointer-events: auto;
   position: relative;
   transition: all 0.3s ease;
   isolation: isolate;
 }
 
 .geocoder-container.collapsed {
-  width: 0;
-  opacity: 0;
-  pointer-events: none;
+  display: none
 }
 
 /* Hide the Mapbox geocoder's miscellaneous elements */
@@ -744,29 +761,91 @@ html, body {
   padding: 8px 20px 18px; 
 }
 
-/* ===== LOADING STYLES ===== */
-.loading {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font: 600 14px/1 Inter, system-ui, sans-serif;
-  color: #667085;
+/* ===== STARGAZING MODE ===== */
+
+.mapboxgl-canvas.stargazing-mode {
+  animation: target-pulse 2s infinite;
 }
 
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #e2e8f0;
-  border-top: 2px solid #7f8f77;
+.stargazing-pin {
+  animation: stargazing-pulse 2s infinite;
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.9));
+  transition: all 0.3s ease;
+}
+
+@keyframes stargazing-pulse {
+  0% { 
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.7));
+  }
+  50% { 
+    transform: scale(1.2) rotate(5deg);
+    filter: drop-shadow(0 0 16px rgba(255, 255, 255, 1));
+  }
+  100% { 
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.7));
+  }
+}
+
+/* Custom cursor styles */
+.mapboxgl-canvas.stargazing-mode {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52' viewBox='0 0 52 52' fill='none'%3E%3Cstyle%3E%40keyframes starGlow %7B 0%25%2C 100%25 %7B filter%3A drop-shadow(0 0 4px %23FFD700)%3B %7D 50%25 %7B filter%3A drop-shadow(0 0 8px %23FFD700)%3B %7D %7D .star-head %7B animation%3A starGlow 1s ease-in-out infinite%3B %7D %3C%2Fstyle%3E%3C!-- Continuous Parabolic Trail --%3E%3Cpath d='M 18,40 Q 28,22 46,14' stroke='url(%23cometTrail)' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M 18,40 Q 28,22 46,14' stroke='url(%23cometTrail2)' stroke-width='6' stroke-linecap='round' fill='none'/%3E%3C!-- Star Head --%3E%3Cg class='star-head' transform='translate(18,40)'%3E%3Cpath d='M 0,-8 L 3,-3 L 8,0 L 3,3 L 0,8 L -3,3 L -8,0 L -3,-3 Z' fill='%23FFD700'/%3E%3Ccircle cx='0' cy='0' r='3' fill='%23FFFFFF'/%3E%3C/g%3E%3Cdefs%3E%3ClinearGradient id='cometTrail' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%23FFD700' stop-opacity='0.8'/%3E%3Cstop offset='100%25' stop-color='%23FF8C42' stop-opacity='0.1'/%3E%3C/linearGradient%3E%3ClinearGradient id='cometTrail2' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%23FFFFFF' stop-opacity='0.7'/%3E%3Cstop offset='100%25' stop-color='%23FFA500' stop-opacity='0.1'/%3E%3C/linearGradient%3E%3C/defs%3E%3C/svg%3E") 18 40, auto;
+}
+
+.mapboxgl-canvas.hiking-mode {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52' viewBox='0 0 52 52' fill='none' stroke='%2322c55e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cstyle%3E%40keyframes bodyClimb %7B 0%25%2C 100%25 %7B transform%3A translateY(0px)%3B %7D 50%25 %7B transform%3A translateY(-2px)%3B %7D %7D %40keyframes legStep %7B 0%25%2C 100%25 %7B transform%3A rotate(-10deg)%3B %7D 50%25 %7B transform%3A rotate(10deg)%3B %7D %7D %40keyframes armWithStick %7B 0%25%2C 100%25 %7B transform%3A rotate(15deg)%3B %7D 50%25 %7B transform%3A rotate(-5deg)%3B %7D %7D %40keyframes freeArm %7B 0%25%2C 100%25 %7B transform%3A rotate(-10deg)%3B %7D 50%25 %7B transform%3A rotate(5deg)%3B %7D %7D .hiker %7B filter%3A drop-shadow(0 0 4px %2322c55e)%3B %7D .body-group %7B animation%3A bodyClimb 0.9s ease-in-out infinite%3B %7D .right-leg %7B animation%3A legStep 0.9s ease-in-out infinite%3B transform-origin%3A 26px 36px%3B %7D .left-leg %7B animation%3A legStep 0.9s ease-in-out infinite reverse%3B transform-origin%3A 26px 36px%3B %7D .arm-with-stick %7B animation%3A armWithStick 0.9s ease-in-out infinite%3B transform-origin%3A 26px 28px%3B %7D .free-arm %7B animation%3A freeArm 0.9s ease-in-out infinite%3B transform-origin%3A 26px 28px%3B %7D %3C%2Fstyle%3E%3Cg class='hiker'%3E%3C!-- HIKER FACING LEFT (BACKPACK ON RIGHT) --%3E%3Cg class='body-group'%3E%3C!-- Head --%3E%3Ccircle cx='26' cy='16' r='5' fill='%2322c55e'%2F%3E%3C!-- Hat --%3E%3Crect x='24' y='11' width='4' height='2' fill='%2322c55e'%2F%3E%3C!-- Body --%3E%3Cline x1='26' y1='21' x2='26' y2='36' stroke-width='3.5'%2F%3E%3C!-- Backpack (ON THE BACK/RIGHT SIDE) --%3E%3Crect x='27' y='24' width='6' height='9' rx='2' fill='%2322c55e' fill-opacity='0.8'%2F%3E%3C%2Fg%3E%3C!-- Legs --%3E%3Cg class='right-leg'%3E%3Cline x1='26' y1='36' x2='22' y2='48' stroke-width='3'%2F%3E%3C%2Fg%3E%3Cg class='left-leg'%3E%3Cline x1='26' y1='36' x2='30' y2='48' stroke-width='3'%2F%3E%3C%2Fg%3E%3C!-- Arms --%3E%3Cg class='free-arm'%3E%3Cline x1='26' y1='28' x2='22' y2='22' stroke-width='3'%2F%3E%3C%2Fg%3E%3C!-- ARM HOLDING THE STICK --%3E%3Cg class='arm-with-stick'%3E%3C!-- Arm --%3E%3Cline x1='26' y1='28' x2='20' y2='24' stroke-width='3'%2F%3E%3C!-- HIKING STICK CONNECTED TO HAND --%3E%3Cline x1='20' y1='24' x2='14' y2='48' stroke-width='2.5'%2F%3E%3Ccircle cx='14' cy='48' r='2.5' fill='%2322c55e'%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E") 26 32, auto;
+}
+
+/* --------- CORNER LOADING STYLES ---------- */
+.loading-corner {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 2;
+  animation: slideUp 0.3s ease;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(127, 143, 119, 0.95);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font: 600 12px/1 Inter, system-ui, sans-serif;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.loading-spinner-small {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.loading-text {
+  font-size: 12px;
 }
 
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* --------- SHEET LOADING STYLES ---------- */
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -780,6 +859,15 @@ html, body {
   z-index: 2;
   border-radius: 16px;
 }
+
+.loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 14px/1 Inter, system-ui, sans-serif;
+  color: #667085;
+}
+
 
 /* ===== TABLE STYLES ===== */
 .table-container {
@@ -896,7 +984,7 @@ html, body {
   padding: 12px 18px;
   border-radius: 12px; 
   font: 600 14px/1 Inter, system-ui, sans-serif; 
-  z-index: 1;
+  z-index: 4;
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 24px rgba(0,0,0,.3);
   animation: slideUp 0.3s ease;
@@ -919,20 +1007,106 @@ html, body {
 @media (max-width: 1199px) {
   .topbar {
     gap: 8px;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    left: 12px;
+    right: 12px;
+    top: 12px;
   }
-  .pill.pill--search {
+    
+  .pill {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+  
+  /* Tablet layout: Settings, Search, Activity in first row */
+  .pill--settings {
+    order: 1;
+    flex: 0 0 auto;
+    min-width: 56px;
+  }
+  
+  .pill--search {
+    order: 2;
     flex: 1;
+    min-width: 200px;
   }
+  
+  .pill--activity {
+    order: 3;
+    flex: 0 0 auto;
+    min-width: 56px;
+  }
+  
+  /* Date inputs in second row - side by side on tablet */
   .pill--date {
-    min-width: 130px;
+    order: 4;
+    flex: 1 1 calc(50% - 5px);
+    width: calc(50% - 5px);
+    min-width: 0;
   }
+  
+  .pill--date label {
+    font-size: 12px;
+    margin-right: 6px;
+    white-space: nowrap;
+  }
+  
+  .pill--date input {
+    font-size: 14px;
+    padding: 8px 12px;
+    width: 100%;
+    min-width: 0;
+  }
+
   .pill #geocoder .mapboxgl-ctrl-geocoder--input {
     font-size: 20px;
   }
+    
+  .activity-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  
+    /* Tablet table optimizations */
+  .table-container {
+    margin: 0 -8px;
+    width: calc(100% + 16px);
+  }
+  
+  .wx-table {
+    min-width: 600px;
+  }
+  
+  .wx-table th:first-child,
+  .wx-table td:first-child {
+    min-width: 150px;
+    width: 150px;
+  }
+  
+  .wx-table th:last-child,
+  .wx-table td:last-child {
+    min-width: 60px;
+    width: 60px;
+  }
+  
+  .wx-table th:not(:first-child):not(:last-child),
+  .wx-table td:not(:first-child):not(:last-child) {
+    min-width: 90px;
+    width: 90px;
+    padding: 8px 4px;
+    font-size: 13px;
+  }
+  
+  .wx-table th, .wx-table td {
+    padding: 12px 8px;
+    height: 48px;
+    font-size: 14px;
+  }
 }
 
-/* Mobile (767px and below) */
-@media (max-width: 767px) {
+/* Mobile (767px and below) width: >372 startdate creep in first row */
+@media (max-width: 372px) {
   .topbar {
     flex-wrap: wrap;
     gap: 8px;
@@ -943,9 +1117,8 @@ html, body {
   }
   
   .pill {
-    min-height: 56px;
+    min-height: 44x;
     padding: 8px 12px;
-    /* Add gradient for mobile */
     background: linear-gradient(135deg, rgba(127,143,119,0.95), rgba(107,123,99,0.95));
     box-shadow: 0 8px 20px rgba(0,0,0,0.15);
   }
@@ -960,7 +1133,7 @@ html, body {
   .pill--settings {
     order: 1;
     flex: 0 0 auto;
-    min-width: 56px;
+    min-width: 44px;
   }
   
   .pill--search {
@@ -972,14 +1145,22 @@ html, body {
   .pill--activity {
     order: 3;
     flex: 0 0 auto;
-    min-width: 56px;
+    min-width: 44px;
   }
   
   /* Second row: Date inputs */
   .pill--date {
     order: 4;
-    flex: 1;
-    min-width: calc(50% - 8px);
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    width: calc(50% - 4px);
+    flex-basis: calc(50% - 4px);
+  }
+    .pill--date input {
+    font-size: 16px;
+    padding: 6px 8px;
+    min-width: 0;
+    width: 100%;
   }
   .date-input-active {
     background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.9));
@@ -1036,6 +1217,29 @@ html, body {
     border-color: rgba(255, 255, 255, 0.4);
   }
   
+    .mapboxgl-marker {
+    transform: scale(1.2);
+  }
+
+  .loading-corner {
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .loading-indicator {
+    font-size: 14px;
+    padding: 10px 16px;
+  }
+
+  .sheet {
+    max-height: 80vh;
+  }
+  
+  .sheet__body {
+    padding: 8px 16px 18px;
+  }
+
   /* Mobile table optimizations */
   .table-container {
     margin: 0 -16px;
@@ -1086,7 +1290,7 @@ html, body {
   }
   
   .pill {
-    min-height: 52px;
+    min-height: 42px;
     padding: 6px 10px;
     border-radius: 12px;
     /* Enhanced gradient for small mobile */
@@ -1096,14 +1300,18 @@ html, body {
   
   .pill--settings,
   .pill--activity {
-    min-width: 52px;
+    min-width: 42px;
   }
-  
+
   .pill--date {
     order: 4;
-    flex: 1;
-    min-width: calc(50% - 8px);
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    width: calc(50% - 4px);
+    margin-top: 8px;
+    break-before: always; /* This forces new row */
   }
+
   .date-input-active {
     background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.9));
     border: 2px solid rgba(127,143,119,0.7);
